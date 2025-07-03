@@ -1,0 +1,103 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: Build
+      run: swift build -v
+    
+    - name: Run tests
+      run: swift test
+    
+    - name: Build for release
+      run: swift build -c release
+
+  release:
+    needs: build
+    runs-on: macos-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: Build release
+      run: swift build -c release
+    
+    - name: Create app bundle
+      run: |
+        mkdir -p ClaudeRadar.app/Contents/MacOS
+        mkdir -p ClaudeRadar.app/Contents/Resources
+        cp .build/release/ClaudeRadar ClaudeRadar.app/Contents/MacOS/
+        
+        # Create Info.plist
+        cat > ClaudeRadar.app/Contents/Info.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>CFBundleExecutable</key>
+            <string>ClaudeRadar</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.yourname.clauderadar</string>
+            <key>CFBundleInfoDictionaryVersion</key>
+            <string>6.0</string>
+            <key>CFBundleName</key>
+            <string>ClaudeRadar</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>CFBundleShortVersionString</key>
+            <string>1.0.0</string>
+            <key>CFBundleVersion</key>
+            <string>1</string>
+            <key>LSMinimumSystemVersion</key>
+            <string>13.0</string>
+            <key>NSHighResolutionCapable</key>
+            <true/>
+            <key>LSUIElement</key>
+            <true/>
+        </dict>
+        </plist>
+        EOF
+    
+    - name: Create DMG
+      run: |
+        brew install create-dmg
+        create-dmg \
+          --volname "ClaudeRadar" \
+          --window-pos 200 120 \
+          --window-size 600 400 \
+          --icon-size 100 \
+          --icon "ClaudeRadar.app" 175 120 \
+          --hide-extension "ClaudeRadar.app" \
+          --app-drop-link 425 120 \
+          "ClaudeRadar.dmg" \
+          "ClaudeRadar.app"
+    
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ClaudeRadar.dmg
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
