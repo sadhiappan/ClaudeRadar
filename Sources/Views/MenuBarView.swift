@@ -7,37 +7,56 @@ struct MenuBarView: View {
     @State private var selectedTimeRange: TimeRange = .today
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Modern Gradient Header
-            CompleteGradientHeader(
-                session: usageManager.currentSession,
-                themeManager: themeManager,
-                onRefresh: {
-                    print("🔄 Refresh button clicked")
-                    usageManager.refreshData()
+        Group {
+            if usageManager.isLoading && usageManager.currentSession == nil {
+                // Show shimmer loading state for initial load
+                LoadingStateView(showFullInterface: true)
+                    .frame(width: DesignTokens.Layout.menuBarWidth)
+                    .transition(
+                        AccessibilitySystem.ReducedMotion.isEnabled 
+                            ? .identity 
+                            : .opacity.combined(with: .scale(scale: 0.95))
+                    )
+            } else {
+                // Show normal interface
+                VStack(spacing: 0) {
+                    // Modern Gradient Header
+                    CompleteGradientHeader(
+                        session: usageManager.currentSession,
+                        themeManager: themeManager,
+                        onRefresh: {
+                            print("🔄 Refresh button clicked")
+                            usageManager.refreshData()
+                        }
+                    )
+                    
+                    Divider().opacity(0.3)
+                    
+                    // Current Session Info
+                    currentSessionView
+                    
+                    Divider().opacity(0.5)
+                    
+                    // Usage Chart
+                    usageChartView
+                    
+                    Divider().opacity(0.5)
+                    
+                    // Quick Actions + Footer combined
+                    VStack(spacing: .spacingSm) {
+                        quickActionsView
+                        footerView
+                    }
                 }
-            )
-            
-            Divider().opacity(0.3)
-            
-            // Current Session Info
-            currentSessionView
-            
-            Divider().opacity(0.5)
-            
-            // Usage Chart
-            usageChartView
-            
-            Divider().opacity(0.5)
-            
-            // Quick Actions + Footer combined
-            VStack(spacing: .spacingSm) {
-                quickActionsView
-                footerView
+                .background(themeManager.currentTheme.background)
+                .frame(width: DesignTokens.Layout.menuBarWidth)
+                .transition(
+                    AccessibilitySystem.ReducedMotion.isEnabled 
+                        ? .identity 
+                        : .opacity.combined(with: .scale(scale: 0.95))
+                )
             }
         }
-        .background(themeManager.currentTheme.background)
-        .frame(width: DesignTokens.Layout.menuBarWidth)
         .onAppear {
             print("📱 MenuBarView appeared - starting monitoring")
             usageManager.startMonitoring()
@@ -56,7 +75,7 @@ struct MenuBarView: View {
                     .foregroundColor(themeManager.currentTheme.text)
                 
                 Text("Token Usage Monitor")
-                    .font(.semanticAppSubtitle)
+                    .font(.appSubtitle)
                     .foregroundColor(themeManager.currentTheme.secondaryText)
             }
             
@@ -75,7 +94,7 @@ struct MenuBarView: View {
                         .font(.caption)
                 }
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(HoverButtonStyle())
             .accessibilityInteractiveButton(
                 label: AccessibilitySystem.Labels.refreshButtonLabel(isLoading: usageManager.isLoading),
                 hint: AccessibilitySystem.Hints.refreshButton
@@ -110,6 +129,9 @@ struct MenuBarView: View {
                             .dynamicTypeScaled(font: .semanticTokenCount)
                             .highContrastAdjusted(color: themeManager.currentTheme.text)
                             .lineLimit(1)
+                            .minimumScaleFactor(0.6)
+                            .allowsTightening(true)
+                            .truncationMode(.tail)
                             .accessibilityLabel("Current session usage: \(session.tokenCount) tokens")
                         
                         HStack(spacing: .spacingXs) {
@@ -121,6 +143,9 @@ struct MenuBarView: View {
                                 .dynamicTypeScaled(font: .semanticSessionStatus)
                                 .highContrastAdjusted(color: Color(session.statusColor))
                                 .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                                .allowsTightening(true)
+                                .truncationMode(.tail)
                                 .accessibilityStatus(status: layoutData.statusMessage, isActive: session.isActive)
                         }
                     } else {
@@ -131,23 +156,24 @@ struct MenuBarView: View {
                             .accessibilityStatus(status: "No active session", isActive: false)
                     }
                 }
-                
-                Spacer()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(minWidth: 180)
                 
                 if let session = usageManager.currentSession {
-                    VStack(spacing: 1) {
+                    VStack(spacing: 2) {
                         CircularProgressView(
                             progress: Double(session.tokenCount) / Double(session.tokenLimit),
                             color: progressColor(for: session.tokenCount, limit: session.tokenLimit)
                         )
-                        .frame(width: .progressCircleSize, height: .progressCircleSize)
+                        .frame(width: 35, height: 35)
                         
                         Text("\(Int(session.progress * 100))%")
-                            .font(.metricLabel)
-                            .dynamicTypeScaled(font: .metricLabel)
-                            .highContrastAdjusted(color: .textSecondary)
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
                             .accessibilityLabel("Session progress: \(Int(session.progress * 100)) percent")
                     }
+                    .frame(width: 45)
                 }
             }
             
@@ -155,57 +181,29 @@ struct MenuBarView: View {
             if let session = usageManager.currentSession {
                 let layoutData = session.metricsLayoutData
                 
-                VStack(spacing: .spacing2) {
-                    // Usage Metrics Group
-                    VStack(alignment: .leading, spacing: .spacing1) {
-                        Text("Current Usage")
-                            .font(.metricLabel)
-                            .dynamicTypeScaled(font: .metricLabel)
-                            .highContrastAdjusted(color: .textSecondary)
-                            .padding(.leading, .spacing1)
-                            .accessibilityHeading(.h3)
-                        
-                        HStack(spacing: .spacing2) {
-                            CompactMetric(
-                                icon: "flame.fill",
-                                color: .accentOrange,
-                                label: "Rate",
-                                value: layoutData.burnRateDisplay
-                            )
-                            
-                            CompactMetric(
-                                icon: "gauge.high",
-                                color: progressColor(for: session.tokenCount, limit: session.tokenLimit),
-                                label: "Used",
-                                value: "\(Int(session.progress * 100))%"
-                            )
-                        }
-                    }
+                // Simplified Current Usage - just Rate and Time Left
+                VStack(alignment: .leading, spacing: .spacing1) {
+                    Text("Current Usage")
+                        .font(.metricLabel)
+                        .dynamicTypeScaled(font: .metricLabel)
+                        .highContrastAdjusted(color: .textSecondary)
+                        .padding(.leading, .spacing1)
+                        .accessibilityHeading(.h3)
                     
-                    // Time Data Group
-                    VStack(alignment: .leading, spacing: .spacing1) {
-                        Text("Time Data")
-                            .font(.metricLabel)
-                            .dynamicTypeScaled(font: .metricLabel)
-                            .highContrastAdjusted(color: .textSecondary)
-                            .padding(.leading, .spacing1)
-                            .accessibilityHeading(.h3)
+                    HStack(spacing: .spacing2) {
+                        CompactMetric(
+                            icon: "flame.fill",
+                            color: .accentOrange,
+                            label: "Rate",
+                            value: layoutData.burnRateDisplay
+                        )
                         
-                        HStack(spacing: .spacing2) {
-                            CompactMetric(
-                                icon: "clock.fill",
-                                color: .accentBlue,
-                                label: "Left",
-                                value: layoutData.timeRemainingDisplay
-                            )
-                            
-                            CompactMetric(
-                                icon: "clock.badge.checkmark",
-                                color: .accentGreen,
-                                label: "Ends",
-                                value: layoutData.sessionEndDisplay
-                            )
-                        }
+                        CompactMetric(
+                            icon: "clock.fill",
+                            color: .accentBlue,
+                            label: "Time Left",
+                            value: layoutData.timeRemainingDisplay
+                        )
                     }
                 }
                 
@@ -269,17 +267,9 @@ struct MenuBarView: View {
                             
                             // Session info
                             VStack(alignment: .leading, spacing: 0) {
-                                HStack {
-                                    Text("\(session.tokenCount) / \(session.tokenLimit)")
-                                        .font(.footerText)
-                                        .foregroundColor(.textPrimary)
-                                    
-                                    Spacer()
-                                    
-                                    Text("\(Int(session.progress * 100))%")
-                                        .font(.footerText)
-                                        .foregroundColor(.textSecondary)
-                                }
+                                Text("\(session.tokenCount) / \(session.tokenLimit)")
+                                    .font(.footerText)
+                                    .foregroundColor(.textPrimary)
                                 
                                 // Mini progress bar
                                 ProgressView(value: session.progress)

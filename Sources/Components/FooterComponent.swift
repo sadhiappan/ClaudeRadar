@@ -33,13 +33,9 @@ struct FooterComponent: View {
             Circle()
                 .fill(footerState.statusColor)
                 .frame(width: 8, height: 8)
-                .animation(.easeInOut(duration: DesignTokens.Animation.fast), value: footerState.statusColor)
+                // No animation for live status updates
             
-            if usageManager.isLoading {
-                ProgressView()
-                    .scaleEffect(0.5)
-                    .frame(width: 8, height: 8)
-            }
+            // No spinning indicator for live updates - status dot shows connection state
         }
         .accessibilityStatus(
             status: footerState.statusMessage,
@@ -78,7 +74,7 @@ struct FooterComponent: View {
         .font(.semanticFootnote)
         .dynamicTypeScaled(font: .semanticFootnote)
         .highContrastAdjusted(color: themeManager.currentTheme.accent)
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(HoverButtonStyle())
         .highContrastBorder()
         .accessibilityInteractiveButton(
             label: AccessibilitySystem.Labels.retryButtonLabel(),
@@ -98,7 +94,7 @@ struct FooterComponent: View {
         .font(.semanticFootnote)
         .dynamicTypeScaled(font: .semanticFootnote)
         .highContrastAdjusted(color: themeManager.currentTheme.secondaryText)
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(HoverButtonStyle())
         .highContrastBorder()
         .accessibilityInteractiveButton(
             label: AccessibilitySystem.Labels.quitButtonLabel(),
@@ -123,10 +119,15 @@ struct FooterComponent: View {
     }
     
     private var updateTimeDisplay: String {
-        if usageManager.isLoading {
-            return "Updating..."
+        // Show "Live" when actively monitoring, only show timestamp if no data for > 1 minute
+        if usageManager.isMonitoring {
+            let timeSinceUpdate = Date().timeIntervalSince(usageManager.lastUpdateTime)
+            if timeSinceUpdate < 60 { // Within 1 minute = still live
+                return "Live"
+            }
         }
         
+        // Show last update time only when monitoring stopped or data is stale (> 1 minute)
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         formatter.timeZone = TimeZone.preferred
@@ -237,7 +238,7 @@ struct FooterComponent_Previews: PreviewProvider {
                 .environmentObject(ThemeManager())
                 .previewDisplayName("No Session")
         }
-        .frame(width: 320, height: 60)
+        .frame(width: DesignTokens.Layout.menuBarWidth, height: 60)
     }
     
     private static func createMockUsageManager(isLoading: Bool, hasError: Bool, hasSession: Bool) -> UsageDataManager {

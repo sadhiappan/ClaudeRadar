@@ -25,6 +25,7 @@ extension Font {
     
     // Subtitles and descriptions
     static let appSubtitle = Font.caption2.weight(.regular)
+    
 }
 
 // MARK: - Color System
@@ -84,17 +85,96 @@ struct PrimaryButtonStyle: ButtonStyle {
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
+    @State private var isHovered: Bool = false
+    
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+            .foregroundColor(isHovered ? .accentBlue : .textPrimary)
+            .padding(.horizontal, .spacing2)
+            .padding(.vertical, .spacing1)
+            .background(
+                RoundedRectangle(cornerRadius: .cornerRadiusSmall)
+                    .fill(isHovered ? Color.backgroundSecondary : Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: .cornerRadiusSmall)
+                            .stroke(isHovered ? Color.accentBlue : Color.textSecondary, lineWidth: 1)
+                    )
+            )
+            .scaleEffect(configuration.isPressed ? 0.95 : (isHovered ? 1.02 : 1.0))
+            .animation(
+                AccessibilitySystem.ReducedMotion.isEnabled 
+                    ? .linear(duration: 0) 
+                    : .easeOut(duration: DesignTokens.Animation.fast), 
+                value: isHovered
+            )
+            .animation(
+                AccessibilitySystem.ReducedMotion.isEnabled 
+                    ? .linear(duration: 0) 
+                    : .easeOut(duration: DesignTokens.Animation.veryFast), 
+                value: configuration.isPressed
+            )
+            .onHover { hovering in
+                isHovered = hovering
+            }
     }
 }
 
 struct TertiaryButtonStyle: ButtonStyle {
+    @State private var isHovered: Bool = false
+    
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .buttonStyle(.plain)
-            .controlSize(.small)
+            .foregroundColor(isHovered ? .accentBlue : .textSecondary)
+            .padding(.horizontal, .spacing2)
+            .padding(.vertical, .spacing1)
+            .background(
+                RoundedRectangle(cornerRadius: .cornerRadiusSmall)
+                    .fill(isHovered ? Color.backgroundSecondary : Color.clear)
+            )
+            .scaleEffect(configuration.isPressed ? 0.95 : (isHovered ? 1.02 : 1.0))
+            .animation(
+                AccessibilitySystem.ReducedMotion.isEnabled 
+                    ? .linear(duration: 0) 
+                    : .easeOut(duration: DesignTokens.Animation.fast), 
+                value: isHovered
+            )
+            .animation(
+                AccessibilitySystem.ReducedMotion.isEnabled 
+                    ? .linear(duration: 0) 
+                    : .easeOut(duration: DesignTokens.Animation.veryFast), 
+                value: configuration.isPressed
+            )
+            .onHover { hovering in
+                isHovered = hovering
+            }
+    }
+}
+
+struct HoverButtonStyle: ButtonStyle {
+    @State private var isHovered: Bool = false
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundColor(isHovered ? .accentBlue : .textSecondary)
+            .background(
+                RoundedRectangle(cornerRadius: .cornerRadiusSmall)
+                    .fill(isHovered ? Color.backgroundSecondary : Color.clear)
+            )
+            .scaleEffect(configuration.isPressed ? 0.95 : (isHovered ? 1.05 : 1.0))
+            .animation(
+                AccessibilitySystem.ReducedMotion.isEnabled 
+                    ? .linear(duration: 0) 
+                    : .easeOut(duration: DesignTokens.Animation.fast), 
+                value: isHovered
+            )
+            .animation(
+                AccessibilitySystem.ReducedMotion.isEnabled 
+                    ? .linear(duration: 0) 
+                    : .easeOut(duration: DesignTokens.Animation.veryFast), 
+                value: configuration.isPressed
+            )
+            .onHover { hovering in
+                isHovered = hovering
+            }
     }
 }

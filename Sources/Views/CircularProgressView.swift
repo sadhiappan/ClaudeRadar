@@ -26,7 +26,7 @@ struct CircularProgressView: View {
                     )
                 )
                 .rotationEffect(.degrees(-90))
-                .animation(.easeInOut(duration: 0.5), value: progress)
+                // No animation - update live for data changes
             
             Text("\(Int(progress * 100))%")
                 .font(.caption2)

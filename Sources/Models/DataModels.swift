@@ -160,7 +160,7 @@ struct ClaudeSession: Identifiable, Codable {
             return MetricsLayoutData(
                 primaryTokenDisplay: "\(tokenCount) tokens used",
                 statusMessage: statusMessage,
-                burnRateDisplay: burnRate != nil ? String(format: "%.1f tokens/min", burnRate!) : "—",
+                burnRateDisplay: burnRate != nil ? String(format: "%.1f/min", burnRate!) : "—",
                 timeRemainingDisplay: formatTimeRemaining(),
                 predictedEndDisplay: predictedEndTimeDisplay,
                 resetCountdownDisplay: sessionEndCountdownDisplay,

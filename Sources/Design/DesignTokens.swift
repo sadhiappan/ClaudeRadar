@@ -131,7 +131,7 @@ struct DesignTokens {
     
     struct Layout {
         // Menu bar dimensions
-        static let menuBarWidth: CGFloat = 320
+        static let menuBarWidth: CGFloat = 280  // Task 10: 280px width constraint compliance
         static let menuBarHeight: CGFloat = 600
         
         // Component sizes
@@ -152,6 +152,7 @@ struct DesignTokens {
         static let normal: Double = 0.25
         static let slow: Double = 0.35
         static let veryFast: Double = 0.1
+        static let progressBar: Double = 0.3  // Task requirement: 0.3s ease-out
     }
 }
 

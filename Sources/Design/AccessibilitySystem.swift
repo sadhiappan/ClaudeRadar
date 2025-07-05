@@ -9,12 +9,12 @@ struct AccessibilitySystem {
     // MARK: - Accessibility Traits
     
     struct Traits {
-        static let progressIndicator: AccessibilityTraits = [.updatesFrequently, .causesPageTurn]
-        static let statusElement: AccessibilityTraits = [.summaryElement, .updatesFrequently]
-        static let navigationElement: AccessibilityTraits = [.button, .keyboardKey]
-        static let metricElement: AccessibilityTraits = [.staticText, .summaryElement]
-        static let interactiveElement: AccessibilityTraits = [.button, .playsSound]
-        static let criticalElement: AccessibilityTraits = [.staticText, .startsMediaSession]
+        static let progressIndicator: AccessibilityTraits = [.updatesFrequently]
+        static let statusElement: AccessibilityTraits = [.updatesFrequently]
+        static let navigationElement: AccessibilityTraits = [.isButton]
+        static let metricElement: AccessibilityTraits = [.isStaticText]
+        static let interactiveElement: AccessibilityTraits = [.isButton]
+        static let criticalElement: AccessibilityTraits = [.isStaticText]
     }
     
     // MARK: - Accessibility Labels
@@ -106,39 +106,24 @@ struct AccessibilitySystem {
     // MARK: - Accessibility Actions
     
     struct Actions {
-        static func refreshAction() -> AccessibilityCustomAction {
-            return AccessibilityCustomAction(name: "Refresh Data") { _ in
-                NotificationCenter.default.post(name: .refreshUsageData, object: nil)
-                return true
-            }
+        static func triggerRefresh() {
+            NotificationCenter.default.post(name: .refreshUsageData, object: nil)
         }
         
-        static func quitAction() -> AccessibilityCustomAction {
-            return AccessibilityCustomAction(name: "Quit Application") { _ in
-                NSApplication.shared.terminate(nil)
-                return true
-            }
+        static func triggerQuit() {
+            NSApplication.shared.terminate(nil)
         }
         
-        static func retryAction() -> AccessibilityCustomAction {
-            return AccessibilityCustomAction(name: "Retry Loading") { _ in
-                NotificationCenter.default.post(name: .retryDataLoad, object: nil)
-                return true
-            }
+        static func triggerRetry() {
+            NotificationCenter.default.post(name: .retryDataLoad, object: nil)
         }
         
-        static func openSettingsAction() -> AccessibilityCustomAction {
-            return AccessibilityCustomAction(name: "Open Settings") { _ in
-                NotificationCenter.default.post(name: .openSettings, object: nil)
-                return true
-            }
+        static func triggerOpenSettings() {
+            NotificationCenter.default.post(name: .openSettings, object: nil)
         }
         
-        static func announceStatusAction(status: String) -> AccessibilityCustomAction {
-            return AccessibilityCustomAction(name: "Announce Status") { _ in
-                NSAccessibility.post(element: NSApp.mainWindow as Any, notification: .announcementRequested)
-                return true
-            }
+        static func announceStatus(_ status: String) {
+            VoiceOver.announceStatus(status)
         }
     }
     
@@ -146,51 +131,72 @@ struct AccessibilitySystem {
     
     struct DynamicType {
         static func scaledFont(for font: Font, category: DynamicTypeSize) -> Font {
-            switch category {
-            case .xSmall, .small:
-                return font.font(size: font.pointSize * 0.85)
-            case .medium:
-                return font
-            case .large:
-                return font.font(size: font.pointSize * 1.15)
-            case .xLarge:
-                return font.font(size: font.pointSize * 1.3)
-            case .xxLarge:
-                return font.font(size: font.pointSize * 1.5)
-            case .xxxLarge:
-                return font.font(size: font.pointSize * 1.7)
-            case .accessibility1:
-                return font.font(size: font.pointSize * 2.0)
-            case .accessibility2:
-                return font.font(size: font.pointSize * 2.3)
-            case .accessibility3:
-                return font.font(size: font.pointSize * 2.6)
-            case .accessibility4:
-                return font.font(size: font.pointSize * 3.0)
-            case .accessibility5:
-                return font.font(size: font.pointSize * 3.5)
+            let baseSize = font.baseSize
+            let scaleFactor = scaleFactor(for: category)
+            let scaledSize = baseSize * scaleFactor
+            
+            switch font {
+            case .largeTitle:
+                return .system(size: scaledSize, weight: .bold)
+            case .title:
+                return .system(size: scaledSize, weight: .bold)
+            case .title2:
+                return .system(size: scaledSize, weight: .bold)
+            case .title3:
+                return .system(size: scaledSize, weight: .semibold)
+            case .headline:
+                return .system(size: scaledSize, weight: .semibold)
+            case .subheadline:
+                return .system(size: scaledSize, weight: .regular)
+            case .body:
+                return .system(size: scaledSize, weight: .regular)
+            case .callout:
+                return .system(size: scaledSize, weight: .regular)
+            case .footnote:
+                return .system(size: scaledSize, weight: .regular)
+            case .caption:
+                return .system(size: scaledSize, weight: .regular)
+            case .caption2:
+                return .system(size: scaledSize, weight: .regular)
             default:
-                return font
+                return .system(size: scaledSize, weight: .regular)
+            }
+        }
+        
+        static func scaleFactor(for category: DynamicTypeSize) -> CGFloat {
+            switch category {
+            case .xSmall:
+                return 0.82
+            case .small:
+                return 0.88
+            case .medium:
+                return 1.0
+            case .large:
+                return 1.12
+            case .xLarge:
+                return 1.24
+            case .xxLarge:
+                return 1.36
+            case .xxxLarge:
+                return 1.48
+            case .accessibility1:
+                return 1.75
+            case .accessibility2:
+                return 2.0
+            case .accessibility3:
+                return 2.35
+            case .accessibility4:
+                return 2.76
+            case .accessibility5:
+                return 3.12
+            default:
+                return 1.0
             }
         }
         
         static func scaledSpacing(for spacing: CGFloat, category: DynamicTypeSize) -> CGFloat {
-            switch category {
-            case .xSmall, .small:
-                return spacing * 0.9
-            case .medium:
-                return spacing
-            case .large, .xLarge:
-                return spacing * 1.1
-            case .xxLarge, .xxxLarge:
-                return spacing * 1.2
-            case .accessibility1, .accessibility2:
-                return spacing * 1.3
-            case .accessibility3, .accessibility4, .accessibility5:
-                return spacing * 1.5
-            default:
-                return spacing
-            }
+            let scaleFactor = scaleFactor(for: category)
+            return spacing * max(0.9, min(1.5, scaleFactor))
         }
     }
     
@@ -206,7 +212,7 @@ struct AccessibilitySystem {
         }
         
         static func animationCurve() -> Animation {
-            return isEnabled ? .none : .easeInOut
+            return isEnabled ? .linear(duration: 0) : .easeInOut
         }
         
         static func transitionEffect() -> AnyTransition {
@@ -247,8 +253,7 @@ struct AccessibilitySystem {
             DispatchQueue.main.async {
                 NSAccessibility.post(
                     element: NSApp.mainWindow as Any,
-                    notification: .announcementRequested,
-                    userInfo: [.announcementKey: text]
+                    notification: .announcementRequested
                 )
             }
         }
@@ -272,11 +277,11 @@ struct AccessibilitySystem {
         static func configureFocusable(_ view: some View) -> some View {
             view
                 .focusable()
-                .onKeyPress(.space) { _ in
+                .onKeyPress(.space) {
                     // Handle space key activation
                     return .handled
                 }
-                .onKeyPress(.return) { _ in
+                .onKeyPress(.return) {
                     // Handle return key activation
                     return .handled
                 }
@@ -285,11 +290,11 @@ struct AccessibilitySystem {
         static func configureButton(_ view: some View, action: @escaping () -> Void) -> some View {
             view
                 .focusable()
-                .onKeyPress(.space) { _ in
+                .onKeyPress(.space) {
                     action()
                     return .handled
                 }
-                .onKeyPress(.return) { _ in
+                .onKeyPress(.return) {
                     action()
                     return .handled
                 }
@@ -308,7 +313,6 @@ extension View {
             .accessibilityLabel(AccessibilitySystem.Labels.progressLabel(model: model, percentage: percentage, tokenCount: tokenCount))
             .accessibilityValue(AccessibilitySystem.Values.progressValue(percentage: percentage))
             .accessibilityHint(AccessibilitySystem.Hints.progressBar)
-            .accessibilityTraits(AccessibilitySystem.Traits.progressIndicator)
     }
     
     func accessibilityStatus(status: String, isActive: Bool) -> some View {
@@ -316,7 +320,6 @@ extension View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(AccessibilitySystem.Labels.statusLabel(status: status, isActive: isActive))
             .accessibilityHint(AccessibilitySystem.Hints.statusIndicator)
-            .accessibilityTraits(AccessibilitySystem.Traits.statusElement)
     }
     
     func accessibilityInteractiveButton(label: String, hint: String, action: @escaping () -> Void) -> some View {
@@ -324,7 +327,6 @@ extension View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(label)
             .accessibilityHint(hint)
-            .accessibilityTraits(AccessibilitySystem.Traits.interactiveElement)
             .accessibilityAction(named: label, action)
     }
     
@@ -333,7 +335,6 @@ extension View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(label)
             .accessibilityValue(value)
-            .accessibilityTraits(AccessibilitySystem.Traits.metricElement)
     }
     
     func accessibilityCircularProgress(percentage: Double, tokenCount: Int, limit: Int) -> some View {
@@ -342,7 +343,6 @@ extension View {
             .accessibilityLabel(AccessibilitySystem.Labels.circularProgressLabel(percentage: percentage, tokenCount: tokenCount, limit: limit))
             .accessibilityValue(AccessibilitySystem.Values.progressValue(percentage: percentage * 100))
             .accessibilityHint(AccessibilitySystem.Hints.circularProgress)
-            .accessibilityTraits(AccessibilitySystem.Traits.progressIndicator)
     }
     
     // MARK: - Keyboard Navigation
@@ -358,11 +358,11 @@ extension View {
     // MARK: - Dynamic Type Support
     
     func dynamicTypeScaled(font: Font) -> some View {
-        self.font(AccessibilitySystem.DynamicType.scaledFont(for: font, category: .medium))
+        DynamicTypeScaledView(content: self, font: font)
     }
     
     func dynamicTypeScaled(spacing: CGFloat) -> some View {
-        self.padding(AccessibilitySystem.DynamicType.scaledSpacing(for: spacing, category: .medium))
+        DynamicTypeScaledSpacingView(content: self, spacing: spacing)
     }
     
     // MARK: - Reduced Motion Support
@@ -406,14 +406,56 @@ extension Notification.Name {
 // MARK: - Font Extensions
 
 extension Font {
-    var pointSize: CGFloat {
-        // Extract point size from font - this is a simplified approach
-        // In a real implementation, you'd need to get the actual font metrics
-        return 14.0 // Default point size
+    var baseSize: CGFloat {
+        // Standard iOS/macOS font sizes based on Apple's Human Interface Guidelines
+        switch self {
+        case .largeTitle:
+            return 34.0
+        case .title:
+            return 28.0
+        case .title2:
+            return 22.0
+        case .title3:
+            return 20.0
+        case .headline:
+            return 17.0
+        case .subheadline:
+            return 15.0
+        case .body:
+            return 17.0
+        case .callout:
+            return 16.0
+        case .footnote:
+            return 13.0
+        case .caption:
+            return 12.0
+        case .caption2:
+            return 11.0
+        default:
+            return 17.0 // Default body size
+        }
     }
+}
+
+// MARK: - Dynamic Type Helper Views
+
+struct DynamicTypeScaledView<Content: View>: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    let content: Content
+    let font: Font
     
-    func font(size: CGFloat) -> Font {
-        return Font.system(size: size)
+    var body: some View {
+        content.font(AccessibilitySystem.DynamicType.scaledFont(for: font, category: dynamicTypeSize))
+    }
+}
+
+struct DynamicTypeScaledSpacingView<Content: View>: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    let content: Content
+    let spacing: CGFloat
+    
+    var body: some View {
+        content.padding(AccessibilitySystem.DynamicType.scaledSpacing(for: spacing, category: dynamicTypeSize))
     }
 }
 

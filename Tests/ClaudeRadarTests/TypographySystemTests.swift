@@ -148,7 +148,7 @@ class TypographySystemTests: XCTestCase {
         let layout = DesignTokens.Layout.self
         
         // Then - Should define consistent layout values
-        XCTAssertEqual(layout.menuBarWidth, 320)
+        XCTAssertEqual(layout.menuBarWidth, 280)
         XCTAssertEqual(layout.menuBarHeight, 600)
         XCTAssertEqual(layout.progressBarHeight, 8)
         XCTAssertEqual(layout.circularProgressSize, 60)

@@ -4,9 +4,26 @@ import SwiftUI
 
 struct ModelProgressBar: View {
     let breakdown: ModelUsageBreakdown
+    let isLoading: Bool
     @State private var animatedProgress: Double = 0.0
+    @State private var isHovered: Bool = false
+    
+    init(breakdown: ModelUsageBreakdown, isLoading: Bool = false) {
+        self.breakdown = breakdown
+        self.isLoading = isLoading
+    }
     
     var body: some View {
+        Group {
+            if isLoading {
+                ShimmerProgressBar()
+            } else {
+                normalProgressView
+            }
+        }
+    }
+    
+    private var normalProgressView: some View {
         VStack(alignment: .leading, spacing: .spacingSm) {
             // Model info header
             HStack {
@@ -16,16 +33,16 @@ struct ModelProgressBar: View {
                     .frame(width: .spacingSm, height: .spacingSm)
                 
                 Text(breakdown.modelInfo.shortName)
-                    .font(.semanticMetricLabel)
-                    .dynamicTypeScaled(font: .semanticMetricLabel)
+                    .font(.metricLabel)
+                    .dynamicTypeScaled(font: .metricLabel)
                     .highContrastAdjusted(color: .primary)
                 
                 Spacer()
                 
                 // Percentage
                 Text(formattedPercentage)
-                    .font(.semanticMetricValue)
-                    .dynamicTypeScaled(font: .semanticMetricValue)
+                    .font(.metricValue)
+                    .dynamicTypeScaled(font: .metricValue)
                     .highContrastAdjusted(color: .primary)
                     .monospacedDigit()
             }
@@ -42,12 +59,13 @@ struct ModelProgressBar: View {
                     // Progress fill
                     Rectangle()
                         .fill(breakdown.modelInfo.color)
+                        .opacity(isHovered ? 1.0 : 0.8)
                         .frame(
                             width: geometry.size.width * animatedProgress,
                             height: DesignTokens.Layout.progressBarHeight
                         )
                         .cornerRadius(.progressBarRadius)
-                        .reducedMotionAnimation(duration: DesignTokens.Animation.normal)
+                        // No animation for live data updates
                 }
             }
             .frame(height: DesignTokens.Layout.progressBarHeight)
@@ -65,18 +83,23 @@ struct ModelProgressBar: View {
             tokenCount: breakdown.tokenCount
         )
         .keyboardFocusable()
-        .reducedMotionAnimation(duration: DesignTokens.Animation.normal)
+        .reducedMotionAnimation(duration: DesignTokens.Animation.progressBar)
         .onAppear {
-            // Only animate once on first appearance
-            if animatedProgress == 0.0 {
-                withAnimation(.easeInOut(duration: DesignTokens.Animation.normal).delay(0.1)) {
-                    animatedProgress = breakdown.percentage / 100.0
-                }
-            }
+            // Set initial value immediately without animation for live updates
+            animatedProgress = breakdown.percentage / 100.0
         }
         .onChange(of: breakdown.percentage) { _, newPercentage in
-            // Update without animation on data changes
+            // Update immediately without animation for live data updates
             animatedProgress = newPercentage / 100.0
+        }
+        .onHover { hovering in
+            withAnimation(
+                AccessibilitySystem.ReducedMotion.isEnabled 
+                    ? .linear(duration: 0) 
+                    : .easeOut(duration: DesignTokens.Animation.fast)
+            ) {
+                isHovered = hovering
+            }
         }
     }
     
@@ -167,10 +190,7 @@ struct CompactModelProgressBar: View {
                             height: 4
                         )
                         .cornerRadius(2)
-                        .animation(
-                            .easeInOut(duration: DesignTokens.Animation.fast),
-                            value: animatedProgress
-                        )
+                        // No animation for live data updates
                 }
             }
             .frame(height: 4)
@@ -182,9 +202,8 @@ struct CompactModelProgressBar: View {
                 .frame(minWidth: 35, alignment: .trailing)
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: DesignTokens.Animation.fast).delay(0.05)) {
-                animatedProgress = breakdown.percentage / 100.0
-            }
+            // Set immediately for live updates
+            animatedProgress = breakdown.percentage / 100.0
         }
     }
     
@@ -213,7 +232,7 @@ struct DetailedModelProgressBar: View {
                             .frame(width: .spacingMd, height: .spacingMd)
                         
                         Text(breakdown.modelInfo.displayName)
-                            .font(.semanticMetricLabel)
+                            .font(.metricLabel)
                             .foregroundColor(.primary)
                         
                         if breakdown.modelInfo.isHighPerformance {
@@ -235,7 +254,7 @@ struct DetailedModelProgressBar: View {
                 if showsPercentage {
                     VStack(alignment: .trailing, spacing: .spacingXs) {
                         Text(formattedPercentage)
-                            .font(.semanticMetricValue)
+                            .font(.metricValue)
                             .foregroundColor(.primary)
                             .monospacedDigit()
                         
@@ -274,10 +293,7 @@ struct DetailedModelProgressBar: View {
                             width: geometry.size.width * animatedProgress,
                             height: 12
                         )
-                        .animation(
-                            .easeInOut(duration: DesignTokens.Animation.normal),
-                            value: animatedProgress
-                        )
+                        // No animation for live data updates
                 }
             }
             .frame(height: 12)
@@ -286,9 +302,8 @@ struct DetailedModelProgressBar: View {
         .background(Color.gray.opacity(0.05))
         .cornerRadius(.cardRadius)
         .onAppear {
-            withAnimation(.easeInOut(duration: DesignTokens.Animation.normal).delay(0.2)) {
-                animatedProgress = breakdown.percentage / 100.0
-            }
+            // Set immediately for live updates
+            animatedProgress = breakdown.percentage / 100.0
         }
     }
     
@@ -327,14 +342,12 @@ struct AnimatedProgressBar: View {
             }
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: animationDuration)) {
-                currentProgress = targetProgress
-            }
+            // Set immediately for live updates
+            currentProgress = targetProgress
         }
         .onChange(of: targetProgress) { _, newValue in
-            withAnimation(.easeInOut(duration: animationDuration)) {
-                currentProgress = newValue
-            }
+            // Update immediately for live data updates
+            currentProgress = newValue
         }
     }
 }
@@ -359,15 +372,12 @@ struct CircularProgressIndicator: View {
                     style: StrokeStyle(lineWidth: 8, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
-                .animation(
-                    .easeInOut(duration: DesignTokens.Animation.slow),
-                    value: animatedProgress
-                )
+                // No animation for live data updates
             
             // Center content
             VStack(spacing: .spacingXs) {
                 Text("\(Int((animatedProgress * 100).rounded()))%")
-                    .font(.semanticMetricValue)
+                    .font(.metricValue)
                     .foregroundColor(.primary)
                     .monospacedDigit()
                 
@@ -379,9 +389,12 @@ struct CircularProgressIndicator: View {
         .frame(width: DesignTokens.Layout.circularProgressSize, 
                height: DesignTokens.Layout.circularProgressSize)
         .onAppear {
-            withAnimation(.easeInOut(duration: DesignTokens.Animation.slow).delay(0.3)) {
-                animatedProgress = progressValue
-            }
+            // Set immediately for live updates
+            animatedProgress = progressValue
+        }
+        .onChange(of: progressValue) { _, newValue in
+            // Update immediately for live data updates
+            animatedProgress = newValue
         }
     }
     

@@ -50,7 +50,7 @@ struct GradientHeader: View {
                             .fontWeight(.bold)
                         
                         Text(configuration.subtitle)
-                            .font(.semanticAppSubtitle)
+                            .font(.appSubtitle)
                             .foregroundColor(.white.opacity(0.8))
                     }
                 }
@@ -348,7 +348,7 @@ struct HeaderTitle: View {
             }
             
             Text(configuration.text)
-                .font(configuration.style == .primary ? .semanticAppTitle : .semanticAppSubtitle)
+                .font(configuration.style == .primary ? .semanticAppTitle : .appSubtitle)
                 .foregroundColor(.white)
                 .fontWeight(configuration.style == .primary ? .bold : .medium)
         }
@@ -370,7 +370,7 @@ struct HeaderSubtitle: View {
     
     var body: some View {
         Text(configuration.text)
-            .font(.semanticAppSubtitle)
+            .font(.appSubtitle)
             .foregroundColor(.white.opacity(configuration.style == .secondary ? 0.8 : 0.6))
     }
 }
@@ -451,11 +451,10 @@ struct CompleteGradientHeader: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                         
-                        Text("Token Usage Monitor")
+                        Text("Usage Monitor")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.white.opacity(0.8))
                             .lineLimit(1)
-                            .minimumScaleFactor(0.7)
                     }
                 }
                 
