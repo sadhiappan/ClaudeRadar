@@ -13,13 +13,13 @@ struct ClaudeRadarApp: App {
                 .environmentObject(themeManager)
         }
         
-        // Add a window for debugging - comment out for final version
-        WindowGroup("ClaudeRadar Debug") {
-            DebugView()
-                .environmentObject(UsageDataManager.shared)
-                .environmentObject(themeManager)
-                .frame(width: 400, height: 500)
-        }
+        // Debug window commented out for production
+        // WindowGroup("ClaudeRadar Debug") {
+        //     DebugView()
+        //         .environmentObject(UsageDataManager.shared)
+        //         .environmentObject(themeManager)
+        //         .frame(width: 400, height: 500)
+        // }
     }
 }
 

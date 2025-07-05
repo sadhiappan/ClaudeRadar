@@ -25,72 +25,85 @@ struct ModelProgressBar: View {
     
     private var normalProgressView: some View {
         VStack(alignment: .leading, spacing: .spacingSm) {
-            // Model info header
+            // Model header with usage info
             HStack {
-                // Model indicator dot
-                Circle()
-                    .fill(breakdown.modelInfo.color)
-                    .frame(width: .spacingSm, height: .spacingSm)
-                
-                Text(breakdown.modelInfo.shortName)
-                    .font(.metricLabel)
-                    .dynamicTypeScaled(font: .metricLabel)
-                    .highContrastAdjusted(color: .primary)
+                // Model indicator dot and name
+                HStack(spacing: .spacingSm) {
+                    Circle()
+                        .fill(breakdown.modelInfo.color)
+                        .frame(width: .spacingSm, height: .spacingSm)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(breakdown.modelInfo.shortName)
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .highContrastAdjusted(color: .primary)
+                        
+                        Text(breakdown.modelUsageDisplay)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
                 
                 Spacer()
                 
-                // Percentage
-                Text(formattedPercentage)
-                    .font(.metricValue)
-                    .dynamicTypeScaled(font: .metricValue)
-                    .highContrastAdjusted(color: .primary)
+                // Session percentage (right side)
+                Text(formattedSessionPercentage)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
                     .monospacedDigit()
             }
             
-            // Progress bar
+            // Progress bar for individual model limit
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     // Background
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
-                        .frame(height: DesignTokens.Layout.progressBarHeight)
-                        .cornerRadius(.progressBarRadius)
+                        .frame(height: 6)
+                        .cornerRadius(3)
                     
-                    // Progress fill
+                    // Progress fill based on model's daily limit
                     Rectangle()
                         .fill(breakdown.modelInfo.color)
                         .opacity(isHovered ? 1.0 : 0.8)
                         .frame(
-                            width: geometry.size.width * animatedProgress,
-                            height: DesignTokens.Layout.progressBarHeight
+                            width: geometry.size.width * breakdown.modelProgress,
+                            height: 6
                         )
-                        .cornerRadius(.progressBarRadius)
+                        .cornerRadius(3)
                         // No animation for live data updates
                 }
             }
-            .frame(height: DesignTokens.Layout.progressBarHeight)
+            .frame(height: 6)
             
-            // Token count
-            Text("\(breakdown.tokenCount) tokens")
-                .font(.semanticCaption)
-                .dynamicTypeScaled(font: .semanticCaption)
-                .highContrastAdjusted(color: .secondary)
-                .accessibilityLabel("Token count: \(breakdown.tokenCount)")
+            // Model progress details
+            HStack {
+                Text(breakdown.modelLimitDisplay)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                Text(breakdown.tokensRemainingDisplay)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
         .accessibilityProgress(
             model: breakdown.modelInfo.shortName,
-            percentage: breakdown.percentage,
+            percentage: breakdown.modelLimitPercentage,
             tokenCount: breakdown.tokenCount
         )
         .keyboardFocusable()
-        .reducedMotionAnimation(duration: DesignTokens.Animation.progressBar)
         .onAppear {
             // Set initial value immediately without animation for live updates
-            animatedProgress = breakdown.percentage / 100.0
+            animatedProgress = breakdown.modelProgress
         }
-        .onChange(of: breakdown.percentage) { _, newPercentage in
+        .onChange(of: breakdown.tokenCount) { _, _ in
             // Update immediately without animation for live data updates
-            animatedProgress = newPercentage / 100.0
+            animatedProgress = breakdown.modelProgress
         }
         .onHover { hovering in
             withAnimation(
@@ -106,6 +119,10 @@ struct ModelProgressBar: View {
     // MARK: - Computed Properties
     
     var formattedPercentage: String {
+        return "\(Int(breakdown.percentage.rounded()))%"
+    }
+    
+    var formattedSessionPercentage: String {
         return "\(Int(breakdown.percentage.rounded()))%"
     }
     
@@ -481,9 +498,9 @@ struct ModelProgressCollection: View {
         }
     }
     
-    // Filter out models with 0% usage
+    // Always show all models (including 0% usage) as per user requirements
     private var filteredBreakdowns: [ModelUsageBreakdown] {
-        return breakdowns.filter { $0.percentage > 0.1 } // Only show models with > 0.1% usage
+        return breakdowns // Show all models, including those with 0% usage
     }
 }
 

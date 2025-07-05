@@ -37,16 +37,20 @@ struct ClaudeSession: Identifiable, Codable {
     
     var modelBreakdown: [ModelUsageBreakdown] {
         let totalTokens = tokenCount
-        guard totalTokens > 0 else { return [] }
         
-        return modelUsage.map { (modelType, tokens) in
-            let percentage = Double(tokens) / Double(totalTokens) * 100.0
+        // Always show all 3 models in consistent order: Sonnet, Opus, Haiku
+        let allModels: [ModelType] = [.sonnet, .opus, .haiku]
+        
+        return allModels.map { modelType in
+            let tokens = modelUsage[modelType] ?? 0
+            let percentage = totalTokens > 0 ? Double(tokens) / Double(totalTokens) * 100.0 : 0.0
+            
             return ModelUsageBreakdown(
                 modelType: modelType,
                 tokenCount: tokens,
                 percentage: percentage
             )
-        }.sorted { $0.tokenCount > $1.tokenCount } // Sort by usage descending
+        }
     }
     
     var progress: Double {
@@ -113,10 +117,28 @@ struct ClaudeSession: Identifiable, Codable {
         return formatter.string(from: endTime)
     }
     
+    // Session duration from start time to now (for active sessions) or to end time (for inactive)
+    var sessionDuration: TimeInterval {
+        let endPoint = isActive ? Date() : endTime
+        return endPoint.timeIntervalSince(startTime)
+    }
+    
+    var sessionDurationDisplay: String {
+        let totalMinutes = Int(sessionDuration / 60)
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else {
+            return "\(minutes)m"
+        }
+    }
+    
     // MARK: - Status Message System (Python Parity)
     
     var statusMessage: String {
-        guard isActive else { return "Session expired" }
+        guard isActive else { return "💀 Session timed out" }
         
         let usagePercentage = progress * 100
         let currentBurnRate = burnRate ?? 0
@@ -125,13 +147,13 @@ struct ClaudeSession: Identifiable, Codable {
         let isHighBurnRate = currentBurnRate > 100.0 // >100 tokens/min is high
         
         if usagePercentage > 85 {
-            return "Limit approaching - slow down"
+            return "⚠️ Rate limiting incoming..."
         } else if usagePercentage > 60 || isHighBurnRate {
-            return "High burn rate detected"
+            return "🔥 Burning tokens like crazy"
         } else if usagePercentage > 30 {
-            return "Steady usage pace"
+            return "⚡ Coding at warp speed"
         } else {
-            return "Smooth sailing..."
+            return "🚀 All systems green"
         }
     }
     
@@ -160,7 +182,7 @@ struct ClaudeSession: Identifiable, Codable {
             return MetricsLayoutData(
                 primaryTokenDisplay: "\(tokenCount) tokens used",
                 statusMessage: statusMessage,
-                burnRateDisplay: burnRate != nil ? String(format: "%.1f/min", burnRate!) : "—",
+                burnRateDisplay: burnRate != nil ? String(format: "%.1f tokens/min", burnRate!) : "—",
                 timeRemainingDisplay: formatTimeRemaining(),
                 predictedEndDisplay: predictedEndTimeDisplay,
                 resetCountdownDisplay: sessionEndCountdownDisplay,
@@ -184,16 +206,26 @@ struct ClaudeSession: Identifiable, Codable {
     }
     
     private func formatTimeRemaining() -> String {
-        guard let timeRemaining = timeRemaining, timeRemaining > 0 else { return "—" }
+        // Use actual time until session resets, not burn rate prediction
+        let timeUntilReset = timeUntilSessionEnd
+        guard timeUntilReset > 0 else { return "—" }
         
-        let hours = Int(timeRemaining) / 3600
-        let minutes = (Int(timeRemaining) % 3600) / 60
+        let hours = Int(timeUntilReset) / 3600
+        let minutes = (Int(timeUntilReset) % 3600) / 60
         
-        if hours > 0 {
-            return "\(hours)h \(minutes)m"
+        // Shorter format for compact display: "2:21 PM (1h 55m)"
+        let timeRemainingFormat = if hours > 0 {
+            "\(hours)h \(minutes)m"
         } else {
-            return "\(minutes)m"
+            "\(minutes)m"
         }
+        
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.timeZone = TimeZone.preferred
+        let resetTime = formatter.string(from: endTime)
+        
+        return "\(resetTime) (\(timeRemainingFormat))"
     }
 }
 

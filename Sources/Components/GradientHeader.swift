@@ -276,7 +276,11 @@ struct HeaderStatus: View {
     
     var statusText: String {
         guard let session = session else { return "No Session" }
-        return session.isActive ? "Active Session" : "Session Ended"
+        if session.isActive {
+            return "Active Session\n\(session.sessionDurationDisplay)"
+        } else {
+            return "Session Ended"
+        }
     }
     
     var statusColor: Color {

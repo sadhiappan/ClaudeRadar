@@ -8,22 +8,13 @@ struct FooterComponent: View {
     @EnvironmentObject var themeManager: ThemeManager
     
     var body: some View {
-        HStack(spacing: .spacingSm) {
-            // Status indicator and update time
-            HStack(spacing: .spacingXs) {
-                statusIndicator
-                updateTimeText
-            }
-            
-            Spacer()
-            
-            // Action buttons
-            actionButtons
+        HStack(spacing: .spacingXs) {
+            // Live status indicator
+            statusIndicator
+            updateTimeText
         }
         .padding(.horizontal, .spacingLg)
-        .padding(.vertical, .spacingMd)
-        .background(themeManager.currentTheme.secondaryBackground)
-        .cornerRadius(.radiusSm)
+        .padding(.vertical, .spacingSm)
     }
     
     // MARK: - Status Indicator
@@ -55,57 +46,6 @@ struct FooterComponent: View {
             .highContrastAdjusted(color: themeManager.currentTheme.tertiaryText)
     }
     
-    // MARK: - Action Buttons
-    
-    private var actionButtons: some View {
-        HStack(spacing: .spacingSm) {
-            if footerState.showRetryButton {
-                retryButton
-            }
-            
-            quitButton
-        }
-    }
-    
-    private var retryButton: some View {
-        Button("Retry") {
-            usageManager.refreshData()
-        }
-        .font(.semanticFootnote)
-        .dynamicTypeScaled(font: .semanticFootnote)
-        .highContrastAdjusted(color: themeManager.currentTheme.accent)
-        .buttonStyle(HoverButtonStyle())
-        .highContrastBorder()
-        .accessibilityInteractiveButton(
-            label: AccessibilitySystem.Labels.retryButtonLabel(),
-            hint: AccessibilitySystem.Hints.retryButton
-        ) {
-            usageManager.refreshData()
-        }
-        .keyboardNavigable {
-            usageManager.refreshData()
-        }
-    }
-    
-    private var quitButton: some View {
-        Button("Quit") {
-            NSApplication.shared.terminate(nil)
-        }
-        .font(.semanticFootnote)
-        .dynamicTypeScaled(font: .semanticFootnote)
-        .highContrastAdjusted(color: themeManager.currentTheme.secondaryText)
-        .buttonStyle(HoverButtonStyle())
-        .highContrastBorder()
-        .accessibilityInteractiveButton(
-            label: AccessibilitySystem.Labels.quitButtonLabel(),
-            hint: AccessibilitySystem.Hints.quitButton
-        ) {
-            NSApplication.shared.terminate(nil)
-        }
-        .keyboardNavigable {
-            NSApplication.shared.terminate(nil)
-        }
-    }
     
     // MARK: - Computed Properties
     

@@ -28,13 +28,15 @@ struct ModelInfo: Identifiable, Codable {
     let shortName: String
     let colorHex: String
     let isHighPerformance: Bool
+    let dailyLimit: Int  // Daily token limit for this model
     
-    init(type: ModelType, displayName: String, shortName: String, colorHex: String, isHighPerformance: Bool = false) {
+    init(type: ModelType, displayName: String, shortName: String, colorHex: String, dailyLimit: Int, isHighPerformance: Bool = false) {
         self.id = type.rawValue
         self.type = type
         self.displayName = displayName
         self.shortName = shortName
         self.colorHex = colorHex
+        self.dailyLimit = dailyLimit
         self.isHighPerformance = isHighPerformance
     }
     
@@ -51,6 +53,7 @@ struct ModelInfo: Identifiable, Codable {
         displayName: "Claude 3 Opus",
         shortName: "Opus",
         colorHex: "#EF4444", // Red
+        dailyLimit: 3000,
         isHighPerformance: true
     )
     
@@ -59,6 +62,7 @@ struct ModelInfo: Identifiable, Codable {
         displayName: "Claude 3.5 Sonnet",
         shortName: "Sonnet", 
         colorHex: "#3B82F6", // Blue
+        dailyLimit: 40000,
         isHighPerformance: true
     )
     
@@ -67,6 +71,7 @@ struct ModelInfo: Identifiable, Codable {
         displayName: "Claude 3 Haiku",
         shortName: "Haiku",
         colorHex: "#10B981", // Green
+        dailyLimit: 100000,
         isHighPerformance: false
     )
     
@@ -75,6 +80,7 @@ struct ModelInfo: Identifiable, Codable {
         displayName: "Unknown Model",
         shortName: "Unknown",
         colorHex: "#6B7280", // Gray
+        dailyLimit: 0,
         isHighPerformance: false
     )
     
@@ -124,7 +130,7 @@ struct ModelUsageBreakdown: Identifiable {
     let id = UUID()
     let modelType: ModelType
     let tokenCount: Int
-    let percentage: Double
+    let percentage: Double  // Percentage of overall session
     
     var modelInfo: ModelInfo {
         switch modelType {
@@ -133,6 +139,37 @@ struct ModelUsageBreakdown: Identifiable {
         case .haiku: return ModelInfo.haiku
         case .unknown: return ModelInfo.unknown
         }
+    }
+    
+    // Per-model progress (percentage of this model's daily limit)
+    var modelProgress: Double {
+        guard modelInfo.dailyLimit > 0 else { return 0.0 }
+        return min(Double(tokenCount) / Double(modelInfo.dailyLimit), 1.0)
+    }
+    
+    // Tokens remaining for this model
+    var tokensRemaining: Int {
+        return max(modelInfo.dailyLimit - tokenCount, 0)
+    }
+    
+    // Percentage of model's daily limit used
+    var modelLimitPercentage: Double {
+        return modelProgress * 100.0
+    }
+    
+    // Formatted display for per-model usage
+    var modelUsageDisplay: String {
+        return "\(tokenCount) / \(modelInfo.dailyLimit)"
+    }
+    
+    // Formatted display for percentage of model limit
+    var modelLimitDisplay: String {
+        return "\(Int(modelLimitPercentage.rounded()))% of limit"
+    }
+    
+    // Formatted display for tokens remaining
+    var tokensRemainingDisplay: String {
+        return "\(tokensRemaining.formatted()) left"
     }
 }
 

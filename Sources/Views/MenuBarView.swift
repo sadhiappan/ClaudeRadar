@@ -25,8 +25,12 @@ struct MenuBarView: View {
                         session: usageManager.currentSession,
                         themeManager: themeManager,
                         onRefresh: {
-                            print("🔄 Refresh button clicked")
-                            usageManager.refreshData()
+                            do {
+                                print("🔄 Refresh button clicked")
+                                usageManager.refreshData()
+                            } catch {
+                                print("❌ Refresh failed: \(error)")
+                            }
                         }
                     )
                     
@@ -37,16 +41,8 @@ struct MenuBarView: View {
                     
                     Divider().opacity(0.5)
                     
-                    // Usage Chart
-                    usageChartView
-                    
-                    Divider().opacity(0.5)
-                    
-                    // Quick Actions + Footer combined
-                    VStack(spacing: .spacingSm) {
-                        quickActionsView
-                        footerView
-                    }
+                    // Bottom actions row
+                    quickActionsView
                 }
                 .background(themeManager.currentTheme.background)
                 .frame(width: DesignTokens.Layout.menuBarWidth)
@@ -181,47 +177,50 @@ struct MenuBarView: View {
             if let session = usageManager.currentSession {
                 let layoutData = session.metricsLayoutData
                 
-                // Simplified Current Usage - just Rate and Time Left
-                VStack(alignment: .leading, spacing: .spacing1) {
+                // Current Usage section with centered title
+                VStack(alignment: .center, spacing: .spacing1) {
                     Text("Current Usage")
-                        .font(.metricLabel)
-                        .dynamicTypeScaled(font: .metricLabel)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .dynamicTypeScaled(font: .headline)
                         .highContrastAdjusted(color: .textSecondary)
-                        .padding(.leading, .spacing1)
+                        .frame(maxWidth: .infinity, alignment: .center)
                         .accessibilityHeading(.h3)
                     
-                    HStack(spacing: .spacing2) {
+                    HStack(spacing: .spacingXs) {
                         CompactMetric(
-                            icon: "flame.fill",
+                            icon: "speedometer",
                             color: .accentOrange,
                             label: "Rate",
                             value: layoutData.burnRateDisplay
                         )
+                        .frame(maxWidth: .infinity)
+                        .layoutPriority(1)
                         
                         CompactMetric(
-                            icon: "clock.fill",
+                            icon: "timer.circle",
                             color: .accentBlue,
-                            label: "Time Left",
+                            label: "Resets",
                             value: layoutData.timeRemainingDisplay
                         )
+                        .frame(maxWidth: .infinity)
+                        .layoutPriority(1)
                     }
                 }
                 
-                // Model Usage Breakdown
-                if !session.modelBreakdown.isEmpty {
-                    VStack(alignment: .leading, spacing: .spacingSm) {
-                        Text("Model Usage")
-                            .font(.semanticSectionTitle)
-                            .dynamicTypeScaled(font: .semanticSectionTitle)
-                            .highContrastAdjusted(color: themeManager.currentTheme.secondaryText)
-                            .padding(.leading, .spacingXs)
-                            .accessibilityHeading(.h3)
-                        
-                        ModelProgressCollection(
-                            breakdowns: session.modelBreakdown,
-                            style: .compact
-                        )
-                    }
+                // Model Usage Breakdown - Always show all models
+                VStack(alignment: .leading, spacing: .spacingSm) {
+                    Text("Model Usage")
+                        .font(.semanticSectionTitle)
+                        .dynamicTypeScaled(font: .semanticSectionTitle)
+                        .highContrastAdjusted(color: themeManager.currentTheme.secondaryText)
+                        .padding(.leading, .spacingXs)
+                        .accessibilityHeading(.h3)
+                    
+                    ModelProgressCollection(
+                        breakdowns: session.modelBreakdown,
+                        style: .standard
+                    )
                 }
                 
                 // Simple progress bar
@@ -235,107 +234,75 @@ struct MenuBarView: View {
         .cornerRadius(.cardRadius)
     }
     
-    @ViewBuilder
-    private var usageChartView: some View {
-        // Show active sessions overview instead of meaningless trend
-        let activeSessions = usageManager.recentSessions.filter { $0.isActive }
-        
-        if !activeSessions.isEmpty {
-            VStack(alignment: .leading, spacing: .spacing1) {
-                HStack {
-                    Text("Active Sessions")
-                        .font(.metricLabel)
-                        .dynamicTypeScaled(font: .metricLabel)
-                        .highContrastAdjusted(color: .textSecondary)
-                        .accessibilityHeading(.h2)
-                    
-                    Spacer()
-                    
-                    Text("\(activeSessions.count) active")
-                        .font(.footerText)
-                        .foregroundColor(.accentBlue)
-                }
-                
-                // Show session progress bars for active sessions
-                VStack(spacing: .spacing1) {
-                    ForEach(activeSessions.prefix(3)) { session in
-                        HStack(spacing: .spacing2) {
-                            // Session indicator
-                            Circle()
-                                .fill(progressColor(for: session.tokenCount, limit: session.tokenLimit))
-                                .frame(width: 6, height: 6)
-                            
-                            // Session info
-                            VStack(alignment: .leading, spacing: 0) {
-                                Text("\(session.tokenCount) / \(session.tokenLimit)")
-                                    .font(.footerText)
-                                    .foregroundColor(.textPrimary)
-                                
-                                // Mini progress bar
-                                ProgressView(value: session.progress)
-                                    .progressViewStyle(LinearProgressViewStyle(
-                                        tint: progressColor(for: session.tokenCount, limit: session.tokenLimit)
-                                    ))
-                                    .frame(height: 2)
-                            }
-                        }
-                    }
-                    
-                    if activeSessions.count > 3 {
-                        Text("+ \(activeSessions.count - 3) more sessions")
-                            .font(.footerText)
-                            .foregroundColor(.textSecondary)
-                            .padding(.leading, .spacing3)
-                    }
-                }
-            }
-            .padding(.spacing2)
-        }
-    }
     
     private var quickActionsView: some View {
-        HStack {
-            Button("Export") {
-                usageManager.exportData()
-            }
-            .buttonStyle(SecondaryButtonStyle())
-            .accessibilityInteractiveButton(
-                label: "Export usage data",
-                hint: "Export current usage data to file"
-            ) {
-                usageManager.exportData()
-            }
-            .keyboardNavigable {
-                usageManager.exportData()
+        HStack(spacing: .spacing2) {
+            // Live status first
+            HStack(spacing: .spacingXs) {
+                Circle()
+                    .fill(Color.green)
+                    .frame(width: 8, height: 8)
+                Text("Live")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
             
             Spacer()
             
-            Button("Settings") {
-                print("🔧 Settings button clicked")
-                // TODO: Move to WindowManager service
-                openSettingsWindow()
+            // Icon buttons - cohesive filled circle style
+            Button {
+                do {
+                    usageManager.exportData()
+                } catch {
+                    print("❌ Export failed: \(error)")
+                }
+            } label: {
+                Image(systemName: "arrow.up.doc.fill")
+                    .font(.title)
+                    .foregroundColor(.blue)
             }
-            .buttonStyle(TertiaryButtonStyle())
-            .accessibilityInteractiveButton(
-                label: AccessibilitySystem.Labels.settingsButtonLabel(),
-                hint: AccessibilitySystem.Hints.settingsButton
-            ) {
-                openSettingsWindow()
+            .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel("Export usage data")
+            .accessibilityHint("Export current usage data to file")
+            
+            Button {
+                do {
+                    print("🔧 Settings button clicked")
+                    try openSettingsWindowSafely()
+                } catch {
+                    print("❌ Settings window failed: \(error)")
+                }
+            } label: {
+                Image(systemName: "gearshape.fill")
+                    .font(.title)
+                    .foregroundColor(.gray)
             }
-            .keyboardNavigable {
-                openSettingsWindow()
+            .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel("Settings")
+            .accessibilityHint("Open application settings")
+            
+            Button {
+                do {
+                    print("🚪 Quit button clicked")
+                    NSApplication.shared.terminate(nil)
+                } catch {
+                    print("❌ Quit failed: \(error)")
+                    // Force quit as backup
+                    exit(0)
+                }
+            } label: {
+                Image(systemName: "multiply.circle.fill")
+                    .font(.title)
+                    .foregroundColor(.red)
             }
+            .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel("Quit application")
+            .accessibilityHint("Close ClaudeRadar")
         }
         .padding(.horizontal, .spacing3)
-        .padding(.top, .spacing2)
+        .padding(.vertical, .spacing2)
     }
     
-    private var footerView: some View {
-        FooterComponent()
-            .environmentObject(usageManager)
-            .environmentObject(themeManager)
-    }
     
     // MARK: - Helper Methods
     
@@ -396,28 +363,56 @@ struct MenuBarView: View {
         return formatter.string(from: usageManager.lastUpdateTime)
     }
     
-    private func openSettingsWindow() {
-        if let window = NSApp.windows.first(where: { $0.title == "Settings" }) {
+    private func openSettingsWindowSafely() throws {
+        if let window = NSApp.windows.first(where: { $0.title == "ClaudeRadar Settings" }) {
             window.makeKeyAndOrderFront(nil)
-        } else {
-            let settingsView = SettingsView()
-            let hostingController = NSHostingController(rootView: settingsView)
-            let fittingSize = hostingController.view.fittingSize
-            let dynamicSize = NSSize(
-                width: max(fittingSize.width, 500),
-                height: max(fittingSize.height, 450)
-            )
-            let settingsWindow = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: dynamicSize.width, height: dynamicSize.height),
-                styleMask: [.titled, .closable, .resizable, .miniaturizable],
-                backing: .buffered,
-                defer: false
-            )
-            settingsWindow.title = "ClaudeRadar Settings"
-            settingsWindow.minSize = NSSize(width: 500, height: 450)
-            settingsWindow.contentViewController = hostingController
-            settingsWindow.center()
-            settingsWindow.makeKeyAndOrderFront(nil)
+            return
+        }
+        
+        let settingsView = SettingsView()
+            .environmentObject(themeManager)
+        
+        let hostingController = NSHostingController(rootView: settingsView)
+        
+        let settingsWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 450),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        
+        settingsWindow.title = "ClaudeRadar Settings"
+        settingsWindow.minSize = NSSize(width: 500, height: 450)
+        settingsWindow.contentViewController = hostingController
+        settingsWindow.center()
+        settingsWindow.makeKeyAndOrderFront(nil)
+        
+        print("✅ Settings window opened successfully")
+    }
+    
+    private func openSettingsWindow() {
+        // Legacy wrapper for compatibility
+        do {
+            try openSettingsWindowSafely()
+        } catch {
+            print("❌ Settings window failed: \(error)")
+        }
+    }
+}
+
+enum SettingsError: Error {
+    case missingThemeManager
+    case failedToCreateView
+    case windowCreationFailed
+    
+    var localizedDescription: String {
+        switch self {
+        case .missingThemeManager:
+            return "Theme manager not available"
+        case .failedToCreateView:
+            return "Failed to create settings view"
+        case .windowCreationFailed:
+            return "Failed to create settings window"
         }
     }
 }
@@ -443,30 +438,74 @@ struct CompactMetric: View {
     let value: String
     
     var body: some View {
-        HStack(spacing: .spacing2) {
+        HStack(spacing: .spacingSm) {
             Image(systemName: icon)
                 .foregroundColor(color)
-                .font(.footnote)
-                .frame(width: .iconFrameSize)
+                .font(.title3)
+                .frame(width: 20, alignment: .center)
             
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: .spacingXs) {
+                // First line: Label
                 Text(label)
-                    .font(.metricLabel)
+                    .font(.caption)
                     .foregroundColor(.textSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .lineLimit(nil)
+                    .allowsTightening(true)
                 
-                Text(value)
-                    .font(.metricValue)
-                    .foregroundColor(.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                // Parse value for 3-line display
+                if value.contains("tokens/min") {
+                    let components = value.replacingOccurrences(of: " tokens/min", with: "").components(separatedBy: " ")
+                    if let number = components.first {
+                        // Second line: Number
+                        Text(number)
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(.textPrimary)
+                            .lineLimit(nil)
+                            .allowsTightening(true)
+                        
+                        // Third line: Unit
+                        Text("tokens/min")
+                            .font(.caption2)
+                            .foregroundColor(.textSecondary)
+                            .lineLimit(nil)
+                            .allowsTightening(true)
+                    }
+                } else if value.contains("PM") || value.contains("AM") {
+                    // For time format "2:21 PM (1h 44m)"
+                    let components = value.components(separatedBy: " (")
+                    if components.count >= 2 {
+                        // Second line: Time
+                        Text(components[0])
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(.textPrimary)
+                            .lineLimit(nil)
+                            .allowsTightening(true)
+                        
+                        // Third line: Duration
+                        Text("(\(components[1])")
+                            .font(.caption2)
+                            .foregroundColor(.textSecondary)
+                            .lineLimit(nil)
+                            .allowsTightening(true)
+                    }
+                } else {
+                    // Fallback for other formats
+                    Text(value)
+                        .font(.callout)
+                        .fontWeight(.medium)
+                        .foregroundColor(.textPrimary)
+                        .lineLimit(nil)
+                        .multilineTextAlignment(.leading)
+                        .allowsTightening(true)
+                }
             }
             
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, .spacing2)
-        .padding(.vertical, .spacing1)
+        .padding(.horizontal, .spacingMd)
+        .padding(.vertical, .spacingSm)
         .background(Color.backgroundSecondary)
         .cornerRadius(.cornerRadiusMedium)
         .frame(maxWidth: .infinity, alignment: .leading)
