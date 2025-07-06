@@ -123,3 +123,6 @@ Temporary Items
 
 # Claude Code specific
 .claude/
+
+# Internal review files
+FEEDBACK*
