@@ -2,6 +2,25 @@ import Foundation
 import OSLog
 import os.signpost
 
+// MARK: - Security Error Types
+
+enum SecurityError: Error, LocalizedError {
+    case pathTraversalAttempt
+    case invalidPath
+    case memoryBudgetExceeded
+    
+    var errorDescription: String? {
+        switch self {
+        case .pathTraversalAttempt:
+            return "Path traversal attempt detected"
+        case .invalidPath:
+            return "Invalid or unsafe path provided"
+        case .memoryBudgetExceeded:
+            return "Memory budget exceeded"
+        }
+    }
+}
+
 // MARK: - Protocol for Dependency Injection
 protocol DataLoading {
     func loadUsageEntries(from path: String?) async throws -> [UsageEntry]
@@ -27,14 +46,38 @@ class ClaudeDataLoader: DataLoading {
         // Reset memory tracking for each load operation
         resetMemoryTracking()
         
-        let claudePaths = customPath != nil ? [customPath!] : getClaudeDataPaths()
+        // Determine paths to process with security validation
+        let claudePaths: [String]
+        if let customPath = customPath {
+            // Validate custom path for security
+            do {
+                let validatedURL = try validateClaudePath(customPath)
+                claudePaths = [validatedURL.path]
+                logger.info("✅ Using validated custom path: \(validatedURL.path)")
+            } catch {
+                logger.warning("⚠️ Custom path validation failed, falling back to defaults: \(error.localizedDescription)")
+                claudePaths = getClaudeDataPaths()
+            }
+        } else {
+            // Use default paths (already trusted)
+            claudePaths = getClaudeDataPaths()
+        }
+        
         print("🔍 Checking paths: \(claudePaths)")
         
         var allEntries: [UsageEntry] = []
         var processedHashes = Set<String>()
         
         for path in claudePaths {
-            let pathURL = URL(fileURLWithPath: path.expandingTildeInPath)
+            // For default paths, use original logic; custom paths already validated
+            let pathURL: URL
+            if customPath != nil && claudePaths.first == path {
+                // This is our validated custom path
+                pathURL = URL(fileURLWithPath: path)
+            } else {
+                // This is a default path
+                pathURL = URL(fileURLWithPath: path.expandingTildeInPath)
+            }
             print("📂 Checking path: \(pathURL.path)")
             
             guard fileManager.fileExists(atPath: pathURL.path) else {
@@ -74,6 +117,29 @@ class ClaudeDataLoader: DataLoading {
     private func resetMemoryTracking() {
         currentMemoryUsage = 0
         logger.debug("🔄 Memory tracking reset")
+    }
+    
+    // MARK: - Path Validation for Security
+    
+    private func validateClaudePath(_ path: String) throws -> URL {
+        let expanded = path.expandingTildeInPath
+        let url = URL(fileURLWithPath: expanded).resolvingSymlinksInPath()
+        
+        // Define allowed path prefixes for Claude data
+        let homeDirectory = FileManager.default.homeDirectoryForCurrentUser
+        let allowedPrefixes = [
+            homeDirectory.appendingPathComponent(".claude"),
+            homeDirectory.appendingPathComponent(".config/claude")
+        ]
+        
+        // Check if the resolved path starts with any allowed prefix
+        guard allowedPrefixes.contains(where: { url.path.hasPrefix($0.path) }) else {
+            logger.error("🚨 Path traversal attempt detected: \(path) -> \(url.path)")
+            throw SecurityError.pathTraversalAttempt
+        }
+        
+        logger.debug("✅ Path validation passed: \(url.path)")
+        return url
     }
     
     private func getClaudeDataPaths() -> [String] {
