@@ -11,6 +11,10 @@ class ClaudeDataLoader: DataLoading {
     private let fileManager = FileManager.default
     private let maxFileSize: Int = 100_000_000 // 100MB limit
     
+    // Memory budget management for security
+    private let maxTotalMemoryUsage: Int = 500_000_000 // 500MB total budget
+    private var currentMemoryUsage: Int = 0
+    
     // Performance logging
     private let performanceLog = OSLog(subsystem: "com.app.ClaudeRadar", category: .pointsOfInterest)
     private let logger = Logger(subsystem: "com.app.ClaudeRadar", category: "data-loader")
@@ -19,6 +23,9 @@ class ClaudeDataLoader: DataLoading {
         let signpostID = OSSignpostID(log: performanceLog)
         os_signpost(.begin, log: performanceLog, name: "LoadUsageData", signpostID: signpostID)
         logger.info("🔍 Starting data load from paths")
+        
+        // Reset memory tracking for each load operation
+        resetMemoryTracking()
         
         let claudePaths = customPath != nil ? [customPath!] : getClaudeDataPaths()
         print("🔍 Checking paths: \(claudePaths)")
@@ -47,6 +54,26 @@ class ClaudeDataLoader: DataLoading {
         
         // Sort by timestamp
         return allEntries.sorted { $0.timestamp < $1.timestamp }
+    }
+    
+    // MARK: - Memory Budget Management
+    
+    private func checkMemoryBudget(for fileSize: Int) -> Bool {
+        let wouldExceedBudget = currentMemoryUsage + fileSize > maxTotalMemoryUsage
+        if wouldExceedBudget {
+            logger.warning("⚠️ Memory budget would be exceeded. Current: \(self.currentMemoryUsage), File: \(fileSize), Budget: \(self.maxTotalMemoryUsage)")
+        }
+        return !wouldExceedBudget
+    }
+    
+    private func trackMemoryUsage(adding fileSize: Int) {
+        currentMemoryUsage += fileSize
+        logger.debug("📊 Memory usage: \(self.currentMemoryUsage)/\(self.maxTotalMemoryUsage) bytes (\(Int(Double(self.currentMemoryUsage)/Double(self.maxTotalMemoryUsage)*100))%)")
+    }
+    
+    private func resetMemoryTracking() {
+        currentMemoryUsage = 0
+        logger.debug("🔄 Memory tracking reset")
     }
     
     private func getClaudeDataPaths() -> [String] {
@@ -87,6 +114,13 @@ class ClaudeDataLoader: DataLoading {
                         print("⚠️ Skipping large file (\(fileSize) bytes): \(url.lastPathComponent)")
                         continue
                     }
+                    
+                    // Check memory budget before adding file
+                    if !checkMemoryBudget(for: fileSize) {
+                        logger.warning("⚠️ Skipping file due to memory budget: \(url.lastPathComponent) (\(fileSize) bytes)")
+                        continue
+                    }
+                    
                     jsonlFiles.append(url)
                 } catch {
                     print("❌ Could not get file size for: \(url.lastPathComponent)")
@@ -99,6 +133,10 @@ class ClaudeDataLoader: DataLoading {
     }
     
     private func parseJSONLFile(_ fileURL: URL, processedHashes: inout Set<String>) async throws -> [UsageEntry] {
+        // Get file size and track memory usage
+        let fileSize = try fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        trackMemoryUsage(adding: fileSize)
+        
         let content = try String(contentsOf: fileURL, encoding: .utf8)
         let lines = content.components(separatedBy: .newlines).filter { !$0.isEmpty }
         
