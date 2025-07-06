@@ -8,7 +8,7 @@ struct MenuBarView: View {
     
     var body: some View {
         Group {
-            if usageManager.isLoading && usageManager.currentSession == nil {
+            if usageManager.isLoading && usageManager.recentSessions.isEmpty {
                 // Show shimmer loading state for initial load
                 LoadingStateView(showFullInterface: true)
                     .frame(width: DesignTokens.Layout.menuBarWidth)
