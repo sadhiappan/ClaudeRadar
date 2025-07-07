@@ -1,10 +1,16 @@
 import SwiftUI
 import Charts
 
+enum UsageTab {
+    case models
+    case projects
+}
+
 struct MenuBarView: View {
     @EnvironmentObject var usageManager: UsageDataManager
     @EnvironmentObject var themeManager: ThemeManager
     @State private var selectedTimeRange: TimeRange = .today
+    @State private var selectedTab: UsageTab = .models
     
     var body: some View {
         Group {
@@ -210,24 +216,24 @@ struct MenuBarView: View {
                     }
                 }
                 
-                // Model Usage Breakdown - Always show all models
-                VStack(alignment: .leading, spacing: .spacingSm) {
-                    Text("Model Usage")
-                        .font(.semanticSectionTitle)
-                        .dynamicTypeScaled(font: .semanticSectionTitle)
-                        .highContrastAdjusted(color: themeManager.currentTheme.secondaryText)
-                        .padding(.leading, .spacingXs)
-                        .accessibilityHeading(.h3)
-                    
+                // Tab Bar
+                UsageTabBar(selectedTab: $selectedTab)
+                    .padding(.top, .spacingSm)
+                    .padding(.horizontal, .spacingXs)
+                
+                // Content based on selected tab
+                if selectedTab == .models {
+                    // Model Usage Breakdown - Always show all models
                     ModelProgressCollection(
                         breakdowns: session.modelBreakdown,
                         style: .standard
                     )
-                }
-                
-                // Simple progress bar
-                VStack(spacing: 3) {
-                    // Removed redundant progress indicators as per UI feedback
+                } else {
+                    // Project Usage
+                    ProjectProgressCollection(
+                        projects: ProjectUsage.mockData,
+                        style: .standard
+                    )
                 }
             }
         }

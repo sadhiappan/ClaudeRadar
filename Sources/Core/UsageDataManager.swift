@@ -14,6 +14,7 @@ class UsageDataManager: ObservableObject {
     @Published var lastUpdateTime: Date = Date()
     @Published var errorMessage: String?
     @Published var isLoading: Bool = false
+    @Published var projectUsage: [ProjectUsage] = []
     
     private var cancellables = Set<AnyCancellable>()
     private var monitoringTimer: Timer?
