@@ -5,7 +5,7 @@ import UserNotifications
 @main
 struct ClaudeRadarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @StateObject private var themeManager = ThemeManager()
+    @StateObject private var themeManager = ThemeManager.shared
     
     var body: some Scene {
         Settings {
@@ -51,10 +51,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func setupMenuBar() {
         print("🔧 Setting up menu bar item...")
         
-        // Initialize theme manager if not already done
-        if themeManager == nil {
-            themeManager = ThemeManager()
-        }
+        // Use shared theme manager instance
+        themeManager = ThemeManager.shared
         
         // Remove existing status bar item if present
         if let existingItem = statusBarItem {
@@ -90,7 +88,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popover?.contentViewController = NSHostingController(
             rootView: MenuBarView()
                 .environmentObject(UsageDataManager.shared)
-                .environmentObject(themeManager!)
+                .environmentObject(ThemeManager.shared)
         )
         
         print("✅ Menu bar setup completed")
@@ -115,8 +113,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func showPopover() {
-        if let button = statusBarItem?.button, let popover = popover {
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
+        if let button = statusBarItem?.button {
+            print("🔍 ShowPopover called - current theme: \(ThemeManager.shared.effectiveTheme)")
+            
+            // Create a fresh popover each time
+            let newPopover = NSPopover()
+            newPopover.contentSize = NSSize(width: DesignTokens.Layout.menuBarWidth, height: DesignTokens.Layout.menuBarHeight)
+            newPopover.behavior = .transient
+            newPopover.appearance = NSAppearance(named: ThemeManager.shared.effectiveTheme == .dark ? .darkAqua : .aqua)
+            
+            // Remove any custom styling that might interfere
+            newPopover.animates = true
+            
+            let rootView = MenuBarView()
+                .environmentObject(UsageDataManager.shared)
+                .environmentObject(ThemeManager.shared)
+            
+            newPopover.contentViewController = NSHostingController(rootView: rootView)
+            
+            // Replace the old popover
+            popover = newPopover
+            
+            print("✅ New popover created with fresh content")
+            
+            popover?.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
             eventMonitor?.start()
         }
     }

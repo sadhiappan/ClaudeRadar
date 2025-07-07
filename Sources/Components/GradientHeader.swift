@@ -81,9 +81,15 @@ struct GradientHeader: View {
         .opacity(isVisible ? 1.0 : 0.0)
         .scaleEffect(isVisible ? 1.0 : 0.95)
         .onAppear {
+            // Reset state first, then animate
+            isVisible = false
             withAnimation(.easeOut(duration: DesignTokens.Animation.normal)) {
                 isVisible = true
             }
+        }
+        .onDisappear {
+            // Reset state when view disappears
+            isVisible = false
         }
     }
     
@@ -430,7 +436,7 @@ struct CompleteGradientHeader: View {
     
     var body: some View {
         ZStack {
-            // Gradient background
+            // Gradient background - no corner radius, let popover handle it
             HeaderGradient.themeAware(for: themeManager.effectiveTheme)
                 .background
             
@@ -480,7 +486,6 @@ struct CompleteGradientHeader: View {
             .padding(.vertical, .spacingMd)
         }
         .frame(height: HeaderLayout.standard.height)
-        .cornerRadius(.cardRadius)
     }
 }
 

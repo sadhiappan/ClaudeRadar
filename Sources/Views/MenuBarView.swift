@@ -57,6 +57,8 @@ struct MenuBarView: View {
             print("📱 MenuBarView appeared - starting monitoring")
             usageManager.startMonitoring()
         }
+        .background(themeManager.currentTheme.background)
+        .ignoresSafeArea()
     }
     
     private var headerView: some View {
@@ -370,7 +372,7 @@ struct MenuBarView: View {
         }
         
         let settingsView = SettingsView()
-            .environmentObject(themeManager)
+            .environmentObject(ThemeManager.shared)
         
         let hostingController = NSHostingController(rootView: settingsView)
         
