@@ -29,12 +29,14 @@ class UsageDataManager: ObservableObject {
     private init() {
         self.dataLoader = ClaudeDataLoader()
         setupPreferencesObserver()
+        setupAppLifecycleObservers()
     }
     
     // Dependency injection constructor (for testing)
     init(dataLoader: DataLoading) {
         self.dataLoader = dataLoader
         setupPreferencesObserver()
+        setupAppLifecycleObservers()
     }
     
     // MARK: - Public Methods
@@ -83,7 +85,7 @@ class UsageDataManager: ObservableObject {
         print("📤 Export data button clicked")
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.json]
-        panel.nameFieldStringValue = "claude-usage-\(dateFormatter.string(from: Date())).json"
+        panel.nameFieldStringValue = "claude-usage-\(Self.dateFormatter.string(from: Date())).json"
         panel.title = "Export Claude Usage Data"
         panel.prompt = "Export"
         
@@ -160,6 +162,9 @@ class UsageDataManager: ObservableObject {
                 print("⚠️ No active session found")
             }
             
+            // Calculate project usage from entries
+            self.projectUsage = calculateProjectUsage(from: entries)
+            
             // Update published properties
             self.recentSessions = updatedSessions
             self.currentSession = updatedSessions.first { $0.isActive }
@@ -181,6 +186,83 @@ class UsageDataManager: ObservableObject {
                 self.errorMessage = error.localizedDescription
             }
         }
+    }
+    
+    private func calculateProjectUsage(from entries: [UsageEntry]) -> [ProjectUsage] {
+        guard !entries.isEmpty else { 
+            print("📊 No entries provided for project usage calculation")
+            return [] 
+        }
+        
+        print("📊 Calculating project usage from \(entries.count) entries")
+        
+        // Group entries by project path
+        var projectData: [String: [UsageEntry]] = [:]
+        
+        for entry in entries {
+            let projectPath = extractProjectPath(from: entry)
+            projectData[projectPath, default: []].append(entry)
+        }
+        
+        print("📊 Found \(projectData.count) unique projects")
+        
+        let totalTokens = entries.reduce(0) { $0 + $1.totalTokens }
+        var projects: [ProjectUsage] = []
+        
+        for (projectPath, projectEntries) in projectData {
+            let projectTokens = projectEntries.reduce(0) { $0 + $1.totalTokens }
+            let lastUsed = projectEntries.map(\.timestamp).max() ?? Date()
+            let sessionCount = calculateSessionCount(for: projectEntries)
+            let averageTokens = sessionCount > 0 ? projectTokens / sessionCount : 0
+            let percentage = totalTokens > 0 ? (Double(projectTokens) / Double(totalTokens)) * 100 : 0
+            
+            let projectUsage = ProjectUsage(
+                id: projectPath,
+                name: extractProjectName(from: projectPath),
+                fullPath: projectPath,
+                totalTokens: projectTokens,
+                sessionCount: sessionCount,
+                lastUsed: lastUsed,
+                averageTokensPerSession: averageTokens,
+                percentage: percentage
+            )
+            
+            print("📊 Project path: '\(projectPath)'")
+            print("📊 Project name: '\(projectUsage.name)'") 
+            print("📊 Project displayName: '\(projectUsage.displayName)'")
+            print("📊 Project stats: \(projectTokens) tokens, last used: \(projectUsage.lastUsedDisplay)")
+            projects.append(projectUsage)
+        }
+        
+        // Sort by total tokens (descending) and return top projects
+        let sortedProjects = projects.sorted { $0.totalTokens > $1.totalTokens }
+        print("📊 Returning \(sortedProjects.count) projects sorted by usage")
+        return sortedProjects
+    }
+    
+    private func extractProjectPath(from entry: UsageEntry) -> String {
+        // Use the project path from the entry if available
+        return entry.projectPath ?? "/Users/shivadhiappan/Documents/code/Unknown"
+    }
+    
+    private func extractProjectName(from path: String) -> String {
+        // If the path doesn't contain slashes, it's already a clean project name
+        if !path.contains("/") {
+            return path
+        }
+        
+        // For paths, extract the last meaningful component
+        return URL(fileURLWithPath: path).lastPathComponent
+    }
+    
+    private func calculateSessionCount(for entries: [UsageEntry]) -> Int {
+        // Group entries by day or session boundaries
+        // This is a simplified implementation
+        let calendar = Calendar.current
+        let groupedByDay = Dictionary(grouping: entries) { entry in
+            calendar.startOfDay(for: entry.timestamp)
+        }
+        return groupedByDay.count
     }
     
     private func calculateStatistics(from sessions: [ClaudeSession]) -> UsageStatistics {
@@ -283,11 +365,51 @@ class UsageDataManager: ObservableObject {
         }
     }
     
-    private var dateFormatter: DateFormatter {
+    private func setupAppLifecycleObservers() {
+        // For menu bar apps, we should only pause monitoring during system sleep
+        // or when explicitly stopped by user, not when app becomes "inactive"
+        
+        // Monitor system sleep/wake instead of app active/inactive
+        NotificationCenter.default.addObserver(
+            forName: NSWorkspace.willSleepNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.pauseMonitoringForSleep()
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.resumeMonitoringFromSleep()
+        }
+    }
+    
+    private func pauseMonitoringForSleep() {
+        guard isMonitoring else { return }
+        monitoringTimer?.invalidate()
+        monitoringTimer = nil
+        print("💤 Monitoring paused (system sleep)")
+    }
+    
+    private func resumeMonitoringFromSleep() {
+        guard isMonitoring, monitoringTimer == nil else { return }
+        
+        // Setup timer for periodic updates
+        monitoringTimer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
+            print("⏰ Timer tick - refreshing data")
+            self?.refreshData()
+        }
+        print("☀️ Monitoring resumed (system wake)")
+    }
+    
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd-HHmm"
         return formatter
-    }
+    }()
 }
 
 // MARK: - Export Data Structure

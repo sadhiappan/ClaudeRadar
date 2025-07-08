@@ -8,7 +8,7 @@ final class NoActiveSessionBugTests: XCTestCase {
     func testShouldShowActiveSessionInRealEnvironment() async {
         // FAILING TEST: This should pass but currently fails
         // Given - The real app environment with actual Claude data
-        let usageManager = UsageDataManager()
+        let usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         
         // When - We load data and check for current session (like the app does)
         await usageManager.loadUsageData()

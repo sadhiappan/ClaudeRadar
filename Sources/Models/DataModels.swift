@@ -254,8 +254,9 @@ struct UsageEntry: Identifiable, Codable {
     let cost: Double
     let messageId: String?
     let requestId: String?
+    let projectPath: String?
     
-    init(timestamp: Date, inputTokens: Int, outputTokens: Int, cacheCreationTokens: Int, cacheReadTokens: Int, model: String, cost: Double, messageId: String?, requestId: String?) {
+    init(timestamp: Date, inputTokens: Int, outputTokens: Int, cacheCreationTokens: Int, cacheReadTokens: Int, model: String, cost: Double, messageId: String?, requestId: String?, projectPath: String? = nil) {
         self.id = UUID()
         self.timestamp = timestamp
         self.inputTokens = inputTokens
@@ -266,6 +267,7 @@ struct UsageEntry: Identifiable, Codable {
         self.cost = cost
         self.messageId = messageId
         self.requestId = requestId
+        self.projectPath = projectPath
     }
     
     var totalTokens: Int {

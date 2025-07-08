@@ -8,7 +8,7 @@ final class FooterSectionTests: XCTestCase {
     
     func testFooterConnectedState() {
         // Given - A connected state with recent data update
-        let usageManager = UsageDataManager()
+        let usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         let recentUpdateTime = Date().addingTimeInterval(-30) // 30 seconds ago
         usageManager.lastUpdateTime = recentUpdateTime
         usageManager.isLoading = false
@@ -28,7 +28,7 @@ final class FooterSectionTests: XCTestCase {
     
     func testFooterDisconnectedState() {
         // Given - A disconnected state with old data
-        let usageManager = UsageDataManager()
+        let usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         let oldUpdateTime = Date().addingTimeInterval(-900) // 15 minutes ago
         usageManager.lastUpdateTime = oldUpdateTime
         usageManager.isLoading = false
@@ -49,7 +49,7 @@ final class FooterSectionTests: XCTestCase {
     
     func testFooterNoSessionState() {
         // Given - No active session but connected
-        let usageManager = UsageDataManager()
+        let usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         let recentUpdateTime = Date().addingTimeInterval(-10) // 10 seconds ago
         usageManager.lastUpdateTime = recentUpdateTime
         usageManager.isLoading = false
@@ -71,7 +71,7 @@ final class FooterSectionTests: XCTestCase {
     
     func testFooterLoadingState() {
         // Given - A loading state
-        let usageManager = UsageDataManager()
+        let usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         usageManager.isLoading = true
         usageManager.lastUpdateTime = Date()
         usageManager.errorMessage = nil
@@ -87,7 +87,7 @@ final class FooterSectionTests: XCTestCase {
     
     func testFooterErrorState() {
         // Given - An error state
-        let usageManager = UsageDataManager()
+        let usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         usageManager.isLoading = false
         usageManager.errorMessage = "Failed to load data"
         usageManager.lastUpdateTime = Date().addingTimeInterval(-60) // 1 minute ago
@@ -106,7 +106,7 @@ final class FooterSectionTests: XCTestCase {
     
     func testFooterTimeDisplayFormats() {
         // Given - Various time intervals
-        let usageManager = UsageDataManager()
+        let usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         let testCases: [(TimeInterval, String)] = [
             (-5, "seconds"),
             (-65, "minute"),
@@ -132,7 +132,7 @@ final class FooterSectionTests: XCTestCase {
     
     func testFooterStatusColorTransitions() {
         // Given - Usage manager
-        let usageManager = UsageDataManager()
+        let usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         
         // Test 1: Connected with active session
         usageManager.currentSession = createMockActiveSession()
@@ -163,7 +163,7 @@ final class FooterSectionTests: XCTestCase {
     
     func testFooterAccessibilityLabels() {
         // Given - Different footer states
-        let usageManager = UsageDataManager()
+        let usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         let testCases: [(isLoading: Bool, hasError: Bool, hasSession: Bool, expectedLabel: String)] = [
             (false, false, true, "Connected"),
             (true, false, false, "Loading"),
@@ -190,7 +190,7 @@ final class FooterSectionTests: XCTestCase {
     
     func testFooterComponentStateDisplay() {
         // Given - Usage manager in different states
-        let usageManager = UsageDataManager()
+        let usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         
         // Test 1: Connected state
         usageManager.isLoading = false
@@ -273,7 +273,7 @@ final class FooterSectionTests: XCTestCase {
     
     func testFooterStateTransitions() {
         // Given - Starting in loading state
-        let usageManager = UsageDataManager()
+        let usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         usageManager.isLoading = true
         usageManager.errorMessage = nil
         usageManager.currentSession = nil

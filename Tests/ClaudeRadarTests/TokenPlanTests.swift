@@ -28,11 +28,12 @@ final class TokenPlanTests: XCTestCase {
     func testCustomMaxShouldDetectCorrectLimits() {
         // Given - A session with high token usage indicating Max20
         let highUsageSession = ClaudeSession(
-            id: UUID(),
+            id: UUID().uuidString,
             startTime: Date(),
             endTime: Date().addingTimeInterval(3600),
             tokenCount: 100_000, // High usage suggesting Max20
             tokenLimit: 7000, // Wrong limit - should be detected and corrected
+            cost: 5.0,
             isActive: false,
             burnRate: nil
         )

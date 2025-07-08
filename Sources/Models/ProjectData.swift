@@ -15,12 +15,45 @@ struct ProjectUsage: Identifiable {
     
     // Computed properties
     var displayName: String {
-        // Extract meaningful project name from path
+        // Handle real Claude project paths like "/Users/user/Documents/code/ProjectName"
         let components = fullPath.components(separatedBy: "/")
+        
+        // Look for "code" directory and extract the project name after it
         if let codeIndex = components.firstIndex(of: "code"), codeIndex + 1 < components.count {
-            return components[codeIndex + 1]
+            let projectName = components[codeIndex + 1]
+            return cleanProjectName(projectName)
         }
+        
+        // If no "code" directory found, use the last path component
+        if let lastComponent = components.last, !lastComponent.isEmpty {
+            return cleanProjectName(lastComponent)
+        }
+        
         return name
+    }
+    
+    private func cleanProjectName(_ name: String) -> String {
+        // Handle different naming conventions for clean display
+        var cleanName = name
+        
+        // Replace underscores and dashes with spaces
+        cleanName = cleanName.replacingOccurrences(of: "_", with: " ")
+        cleanName = cleanName.replacingOccurrences(of: "-", with: " ")
+        
+        // Handle camelCase - keep it as is if it's recognizable, otherwise split
+        if cleanName.contains(" ") {
+            // Already has spaces, just capitalize
+            return cleanName.capitalized
+        } else {
+            // Check if it's camelCase and preserve it better
+            if cleanName.contains(where: { $0.isUppercase }) {
+                // Has uppercase letters, likely camelCase - keep as is
+                return cleanName
+            } else {
+                // All lowercase, capitalize first letter
+                return cleanName.prefix(1).uppercased() + cleanName.dropFirst()
+            }
+        }
     }
     
     var formattedTokenCount: String {

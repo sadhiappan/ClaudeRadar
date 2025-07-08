@@ -231,7 +231,7 @@ struct MenuBarView: View {
                 } else {
                     // Project Usage
                     ProjectProgressCollection(
-                        projects: ProjectUsage.mockData,
+                        projects: usageManager.projectUsage,
                         style: .standard
                     )
                 }

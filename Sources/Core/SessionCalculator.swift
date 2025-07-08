@@ -2,6 +2,8 @@ import Foundation
 
 class SessionCalculator {
     private let sessionDuration: TimeInterval = 5 * 60 * 60 // 5 hours in seconds
+    private let calendar = Calendar.current // Cached calendar instance
+    private var modelTypeCache: [String: ModelType] = [:] // Cache model type lookups
     
     func calculateSessions(from entries: [UsageEntry], plan: TokenPlan) -> [ClaudeSession] {
         guard !entries.isEmpty else { return [] }
@@ -50,37 +52,20 @@ class SessionCalculator {
         guard !entries.isEmpty else { return [] }
         
         var sessions: [ClaudeSession] = []
-        var sessionBlocks: [(startTime: Date, entries: [UsageEntry])] = []
+        // O(n) grouping using dictionary instead of O(n²) nested loop
+        var sessionBlocks: [Date: [UsageEntry]] = [:]
         
         // Group entries into hour-aligned 5-hour blocks
         for entry in entries {
             let alignedStartTime = alignToHour(entry.timestamp)
-            let blockEndTime = alignedStartTime.addingTimeInterval(sessionDuration)
-            
-            // Check if this entry fits in any existing block
-            var addedToExistingBlock = false
-            for i in 0..<sessionBlocks.count {
-                let blockStart = sessionBlocks[i].startTime
-                let blockEnd = blockStart.addingTimeInterval(sessionDuration)
-                
-                if entry.timestamp >= blockStart && entry.timestamp < blockEnd {
-                    sessionBlocks[i].entries.append(entry)
-                    addedToExistingBlock = true
-                    break
-                }
-            }
-            
-            // Create new block if no existing block fits
-            if !addedToExistingBlock {
-                sessionBlocks.append((startTime: alignedStartTime, entries: [entry]))
-            }
+            sessionBlocks[alignedStartTime, default: []].append(entry)
         }
         
         // Convert blocks to sessions
-        for block in sessionBlocks {
+        for (startTime, entries) in sessionBlocks {
             if let session = createAlignedSession(
-                from: block.entries, 
-                startTime: block.startTime, 
+                from: entries, 
+                startTime: startTime, 
                 plan: plan
             ) {
                 sessions.append(session)
@@ -91,9 +76,17 @@ class SessionCalculator {
     }
     
     private func alignToHour(_ date: Date) -> Date {
-        let calendar = Calendar.current
         let components = calendar.dateComponents([.year, .month, .day, .hour], from: date)
         return calendar.date(from: components) ?? date
+    }
+    
+    private func getModelType(for model: String) -> ModelType {
+        if let cached = modelTypeCache[model] {
+            return cached
+        }
+        let modelType = ModelInfo.from(model).type
+        modelTypeCache[model] = modelType
+        return modelType
     }
     
     private func createAlignedSession(from entries: [UsageEntry], startTime: Date, plan: TokenPlan) -> ClaudeSession? {
@@ -115,7 +108,7 @@ class SessionCalculator {
             totalCost += entry.cost
             
             // Track model usage
-            let modelType = ModelInfo.from(entry.model).type
+            let modelType = getModelType(for: entry.model)
             let entryTokens = entry.totalTokens
             modelUsage[modelType, default: 0] += entryTokens
         }
@@ -168,7 +161,7 @@ class SessionCalculator {
             totalCost += entry.cost
             
             // Track model usage
-            let modelType = ModelInfo.from(entry.model).type
+            let modelType = getModelType(for: entry.model)
             let entryTokens = entry.totalTokens
             modelUsage[modelType, default: 0] += entryTokens
         }

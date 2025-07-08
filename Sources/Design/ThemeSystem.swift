@@ -223,9 +223,9 @@ class ThemeManager: ObservableObject {
     }
     
     private func setupSystemThemeObserver() {
-        // Use NSAppearance observation for theme changes
-        systemThemeObserver = Timer.publish(every: 1.0, on: .main, in: .common)
-            .autoconnect()
+        // Use distributed notification for system appearance changes (more efficient than polling)
+        systemThemeObserver = DistributedNotificationCenter.default()
+            .publisher(for: .init("AppleInterfaceThemeChangedNotification"))
             .sink { [weak self] _ in
                 guard let self = self else { return }
                 if self.userPreference == .auto {

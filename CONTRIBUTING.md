@@ -15,7 +15,7 @@ ClaudeRadar aims to be the **best native macOS app for Claude AI token monitorin
 
 ### Prerequisites
 
-- macOS 13.0 (Ventura) or later
+- macOS 14.0+ (Sonoma) or later
 - Xcode 15.0 or later
 - Swift 5.9 or later
 - Git

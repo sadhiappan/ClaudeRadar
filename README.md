@@ -62,9 +62,9 @@ ClaudeRadar reads usage data from Claude's local JSONL files and provides:
 - **Cross-Session Aggregation**: Combines usage across multiple active sessions
 
 ### Supported Token Plans
-- **Pro**: 44,000 tokens per 5-hour session
-- **Max 5**: 220,000 tokens per 5-hour session  
-- **Max 20**: 880,000 tokens per 5-hour session
+- **Pro**: ~7,000 tokens per 5-hour session
+- **Max 5**: ~35,000 tokens per 5-hour session  
+- **Max 20**: ~140,000 tokens per 5-hour session
 - **Auto-detect**: Automatically determines your plan based on usage patterns
 
 ## Architecture

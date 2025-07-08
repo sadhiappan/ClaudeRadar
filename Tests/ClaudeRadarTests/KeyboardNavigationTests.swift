@@ -11,7 +11,7 @@ class KeyboardNavigationTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
-        usageManager = UsageDataManager()
+        usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         themeManager = ThemeManager()
     }
     

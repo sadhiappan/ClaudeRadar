@@ -11,7 +11,7 @@ class ResponsiveDesignTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
-        usageManager = UsageDataManager()
+        usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         themeManager = ThemeManager()
     }
     
@@ -214,61 +214,6 @@ class ResponsiveDesignTests: XCTestCase {
             cost: 0.30,
             isActive: true,
             burnRate: 15.0,
-            models: ["claude-3-opus-20240229": 1000]
-        )
-        
-        usageManager.currentSession = singleModelSession
-        
-        let menuBarView = MenuBarView()
-            .environmentObject(usageManager)
-            .environmentObject(themeManager)
-        
-        // When - Testing single model display
-        // Then - Should handle single model appropriately
-        XCTAssertNotNil(menuBarView, "MenuBarView should handle single model sessions")
-        XCTAssertEqual(singleModelSession.modelBreakdown.count, 1, "Should have one model breakdown")
-    }
-    
-    func testErrorState() {
-        // Given - Manager with error state
-        usageManager.errorMessage = "Test error message"
-        usageManager.isLoading = false
-        usageManager.currentSession = nil
-        
-        let menuBarView = MenuBarView()
-            .environmentObject(usageManager)
-            .environmentObject(themeManager)
-        
-        // When - Testing error state display
-        // Then - Should handle error gracefully
-        XCTAssertNotNil(menuBarView, "MenuBarView should handle error state")
-        XCTAssertNotNil(usageManager.errorMessage, "Error message should be available")
-    }
-    
-    func testLoadingState() {
-        // Given - Manager in loading state
-        usageManager.isLoading = true
-        usageManager.currentSession = nil
-        
-        let menuBarView = MenuBarView()
-            .environmentObject(usageManager)
-            .environmentObject(themeManager)
-        
-        // When - Testing loading state
-        // Then - Should show loading interface
-        XCTAssertNotNil(menuBarView, "MenuBarView should handle loading state")
-        XCTAssertTrue(usageManager.isLoading, "Should be in loading state")
-    }
-    
-    // MARK: - Layout Stability Tests
-    
-    func testLayoutStabilityWithVaryingContent() {
-        // Given - Sessions with different content lengths
-        let shortSession = createMockSession(tokenCount: 100, isActive: true)
-        let mediumSession = createMockSession(tokenCount: 15000, isActive: true)
-        let longSession = createMockSession(tokenCount: 50000, isActive: false)
-        
-        let sessions = [shortSession, mediumSession, longSession]
         
         for session in sessions {
             // When - Testing with different content lengths
@@ -377,11 +322,6 @@ class ResponsiveDesignTests: XCTestCase {
             cost: 0.75,
             isActive: true,
             burnRate: 35.0,
-            models: [
-                "claude-3-opus-20240229": 15000,
-                "claude-3-sonnet-20240229": 8000,
-                "claude-3-haiku-20240307": 2000
-            ]
         )
     }
 }

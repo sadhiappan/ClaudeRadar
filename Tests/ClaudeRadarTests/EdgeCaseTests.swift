@@ -11,7 +11,7 @@ class EdgeCaseTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
-        usageManager = UsageDataManager()
+        usageManager = UsageDataManager(dataLoader: ClaudeDataLoader())
         themeManager = ThemeManager()
     }
     
@@ -72,20 +72,6 @@ class EdgeCaseTests: XCTestCase {
                 cost: 1.5,
                 isActive: true,
                 burnRate: 25.0,
-                models: ["claude-3-opus-20240229": 5000]
-            ),
-            
-            // Only Sonnet usage
-            ClaudeSession(
-                id: "sonnet-only",
-                startTime: Date().addingTimeInterval(-1800),
-                endTime: Date().addingTimeInterval(16200),
-                tokenCount: 3000,
-                tokenLimit: 44000,
-                cost: 0.9,
-                isActive: true,
-                burnRate: 20.0,
-                models: ["claude-3-sonnet-20240229": 3000]
             ),
             
             // Only Haiku usage
@@ -98,9 +84,6 @@ class EdgeCaseTests: XCTestCase {
                 cost: 0.2,
                 isActive: true,
                 burnRate: 10.0,
-                models: ["claude-3-haiku-20240307": 1000]
-            )
-        ]
         
         for (index, session) in singleModelScenarios.enumerated() {
             // When - Testing single model session
@@ -279,12 +262,6 @@ class EdgeCaseTests: XCTestCase {
                 cost: 0.3,
                 isActive: true,
                 burnRate: 15.0,
-                models: [
-                    "claude-3-opus-20240229": 500,
-                    "claude-3-sonnet-20240229": 300,
-                    "claude-3-haiku-20240307": 400
-                    // Total: 1200, but tokenCount is 1000 (inconsistent)
-                ]
             )
         ]
         
@@ -362,11 +339,6 @@ class EdgeCaseTests: XCTestCase {
                     cost: Double(i) * 0.01,
                     isActive: i < 10,
                     burnRate: Double(i) * 0.5,
-                    models: [
-                        "claude-3-opus-20240229": i * 5,
-                        "claude-3-sonnet-20240229": i * 3,
-                        "claude-3-haiku-20240307": i * 2
-                    ]
                 )
                 sessions.append(session)
             }

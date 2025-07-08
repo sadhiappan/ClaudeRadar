@@ -153,10 +153,12 @@ class ClaudeDataLoader: DataLoading {
         let jsonlFiles = try findJSONLFilesRecursively(in: pathURL)
         print("📁 Found \(jsonlFiles.count) JSONL files recursively in \(pathURL.path)")
         
+        // Process files sequentially (concurrent processing with mutable state is complex)
+        // TODO: Implement proper concurrent processing with actor-based deduplication
         var entries: [UsageEntry] = []
         
         for fileURL in jsonlFiles {
-            let fileEntries = try await parseJSONLFile(fileURL, processedHashes: &processedHashes)
+            let fileEntries = try await parseJSONLFile(fileURL, processedHashes: &processedHashes, basePath: pathURL)
             entries.append(contentsOf: fileEntries)
         }
         
@@ -198,7 +200,7 @@ class ClaudeDataLoader: DataLoading {
         return jsonlFiles
     }
     
-    private func parseJSONLFile(_ fileURL: URL, processedHashes: inout Set<String>) async throws -> [UsageEntry] {
+    private func parseJSONLFile(_ fileURL: URL, processedHashes: inout Set<String>, basePath: URL) async throws -> [UsageEntry] {
         // Get file size and track memory usage
         let fileSize = try fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
         trackMemoryUsage(adding: fileSize)
@@ -221,7 +223,7 @@ class ClaudeDataLoader: DataLoading {
                     continue // Skip duplicate
                 }
                 
-                if let entry = parseUsageEntry(from: json) {
+                if let entry = parseUsageEntry(from: json, fileURL: fileURL, basePath: basePath) {
                     entries.append(entry)
                     if let hash = uniqueHash {
                         processedHashes.insert(hash)
@@ -257,7 +259,7 @@ class ClaudeDataLoader: DataLoading {
         return "\(msgId):\(reqId)"
     }
     
-    private func parseUsageEntry(from json: [String: Any]) -> UsageEntry? {
+    private func parseUsageEntry(from json: [String: Any], fileURL: URL, basePath: URL) -> UsageEntry? {
         guard let timestampString = json["timestamp"] as? String else { return nil }
         
         // Parse timestamp
@@ -300,6 +302,9 @@ class ClaudeDataLoader: DataLoading {
         let messageId = json["message_id"] as? String ?? (json["message"] as? [String: Any])?["id"] as? String
         let requestId = json["request_id"] as? String ?? json["requestId"] as? String
         
+        // Extract project path from JSON data (use cwd field if available)
+        let projectPath = extractProjectPathFromJSON(json: json) ?? extractProjectPath(from: fileURL, basePath: basePath)
+        
         return UsageEntry(
             timestamp: timestamp,
             inputTokens: inputTokens,
@@ -309,8 +314,37 @@ class ClaudeDataLoader: DataLoading {
             model: model,
             cost: cost,
             messageId: messageId,
-            requestId: requestId
+            requestId: requestId,
+            projectPath: projectPath
         )
+    }
+    
+    private func extractProjectPathFromJSON(json: [String: Any]) -> String? {
+        // Extract the current working directory from the JSON data
+        if let cwd = json["cwd"] as? String {
+            return cwd
+        }
+        return nil
+    }
+    
+    private func extractProjectPath(from fileURL: URL, basePath: URL) -> String? {
+        // Extract the project path from the file URL
+        // Claude stores files in structure: ~/.claude/projects/PROJECT_PATH/usage.jsonl
+        // We want to extract the PROJECT_PATH part
+        
+        let filePath = fileURL.path
+        let basePathStr = basePath.path
+        
+        // Remove the base path to get the relative path
+        guard filePath.hasPrefix(basePathStr) else { return nil }
+        
+        let relativePath = String(filePath.dropFirst(basePathStr.count))
+        let pathComponents = relativePath.components(separatedBy: "/").filter { !$0.isEmpty }
+        
+        // The first component should be the project path - return it as-is for cleaner display
+        guard let projectComponent = pathComponents.first else { return nil }
+        
+        return projectComponent
     }
 }
 
@@ -319,5 +353,15 @@ class ClaudeDataLoader: DataLoading {
 extension String {
     var expandingTildeInPath: String {
         return NSString(string: self).expandingTildeInPath
+    }
+}
+
+// MARK: - Array Extension
+
+extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        return stride(from: 0, to: count, by: size).map {
+            Array(self[$0..<Swift.min($0 + size, count)])
+        }
     }
 }
