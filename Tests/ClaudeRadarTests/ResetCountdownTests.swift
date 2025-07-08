@@ -58,7 +58,7 @@ final class ResetCountdownTests: XCTestCase {
         
         for testCase in testCases {
             // When - Format countdown
-            let formatted = formatCountdownTime(testCase.seconds)
+            let formatted = formatCountdownTime(TimeInterval(testCase.seconds))
             
             // Then - Should format appropriately
             XCTAssertEqual(formatted, testCase.expected, 

@@ -83,7 +83,9 @@ class EdgeCaseTests: XCTestCase {
                 tokenLimit: 44000,
                 cost: 0.2,
                 isActive: true,
-                burnRate: 10.0,
+                burnRate: 10.0
+            )
+        ]
         
         for (index, session) in singleModelScenarios.enumerated() {
             // When - Testing single model session

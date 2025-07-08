@@ -220,10 +220,17 @@ class ColorContrastTests: XCTestCase {
     
     func testButtonContrast() {
         // Given - Button colors
+        struct ButtonTest {
+            let text: Color
+            let background: Color
+            let border: Color?
+            let context: String
+        }
+        
         let buttonTests = [
-            (text: Color.white, background: Color.blue, context: "Primary button"),
-            (text: Color.blue, background: Color.clear, border: Color.blue, context: "Secondary button"),
-            (text: Color.gray, background: Color.clear, context: "Tertiary button")
+            ButtonTest(text: Color.white, background: Color.blue, border: nil, context: "Primary button"),
+            ButtonTest(text: Color.blue, background: Color.clear, border: Color.blue, context: "Secondary button"),
+            ButtonTest(text: Color.gray, background: Color.clear, border: nil, context: "Tertiary button")
         ]
         
         for test in buttonTests {

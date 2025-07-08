@@ -45,8 +45,10 @@ class SystemCompatibilityTests: XCTestCase {
     
     func testDarkLightModeCompatibility() {
         // Given - System appearance changes
-        let lightTheme = themeManager.lightTheme
-        let darkTheme = themeManager.darkTheme
+        themeManager.userPreference = .light
+        let lightTheme = themeManager.currentTheme
+        themeManager.userPreference = .dark
+        let darkTheme = themeManager.currentTheme
         
         // When - Testing theme switching
         themeManager.effectiveTheme = .light
@@ -118,7 +120,7 @@ class SystemCompatibilityTests: XCTestCase {
         let sessionHints = AccessibilitySystem.Hints.self
         
         // When - Testing VoiceOver labels and hints
-        let refreshLabel = sessionLabels.refreshButtonLabel()
+        let refreshLabel = sessionLabels.refreshButtonLabel(isLoading: false)
         let settingsLabel = sessionLabels.settingsButtonLabel()
         let quitLabel = sessionLabels.quitButtonLabel()
         

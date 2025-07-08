@@ -140,7 +140,7 @@ class VoiceOverTests: XCTestCase {
                          "\(buttonText) button label should contain button text")
             
             // Should have button trait
-            XCTAssertTrue(accessibilityInfo.traits?.contains(.button) == true, 
+            XCTAssertTrue(accessibilityInfo.traits?.contains(.isButton) == true, 
                          "\(buttonText) should have button trait")
         }
     }
@@ -401,7 +401,7 @@ class VoiceOverTests: XCTestCase {
             label: "Mock accessibility label",
             value: "Mock accessibility value",
             hint: "Mock accessibility hint",
-            traits: [.button, .updatesFrequently]
+            traits: [.isButton, .updatesFrequently]
         )
     }
     

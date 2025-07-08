@@ -159,8 +159,10 @@ class ResponsiveDesignTests: XCTestCase {
     
     func testThemeCompatibility() {
         // Given - Different theme configurations
-        let lightTheme = themeManager.lightTheme
-        let darkTheme = themeManager.darkTheme
+        themeManager.userPreference = .light
+        let lightTheme = themeManager.currentTheme
+        themeManager.userPreference = .dark
+        let darkTheme = themeManager.currentTheme
         
         // When - Testing theme colors
         // Then - Should provide valid colors for both themes
@@ -213,7 +215,10 @@ class ResponsiveDesignTests: XCTestCase {
             tokenLimit: 5000,
             cost: 0.30,
             isActive: true,
-            burnRate: 15.0,
+            burnRate: 15.0
+        )
+        
+        let sessions = [longSession, shortSession, mediumSession]
         
         for session in sessions {
             // When - Testing with different content lengths

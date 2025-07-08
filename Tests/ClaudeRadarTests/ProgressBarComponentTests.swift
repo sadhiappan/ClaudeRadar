@@ -69,7 +69,7 @@ class ProgressBarComponentTests: XCTestCase {
         
         // When - Creating animated progress bar
         let progressBar = AnimatedProgressBar(
-            progress: progress,
+            targetProgress: progress,
             color: .blue,
             backgroundColor: .gray.opacity(0.2)
         )
@@ -82,7 +82,7 @@ class ProgressBarComponentTests: XCTestCase {
     func testProgressBarAnimation() {
         // Given - Animated progress bar
         let progressBar = AnimatedProgressBar(
-            progress: 0.8,
+            targetProgress: 0.8,
             color: .green,
             backgroundColor: .gray.opacity(0.1)
         )
