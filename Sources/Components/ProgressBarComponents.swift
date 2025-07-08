@@ -96,7 +96,6 @@ struct ModelProgressBar: View {
             percentage: breakdown.modelLimitPercentage,
             tokenCount: breakdown.tokenCount
         )
-        .keyboardFocusable()
         .onAppear {
             // Set initial value immediately without animation for live updates
             animatedProgress = breakdown.modelProgress
