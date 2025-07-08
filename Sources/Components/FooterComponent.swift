@@ -32,7 +32,6 @@ struct FooterComponent: View {
             status: footerState.statusMessage,
             isActive: footerState.hasActiveSession
         )
-        .keyboardFocusable()
     }
     
     // MARK: - Update Time Text

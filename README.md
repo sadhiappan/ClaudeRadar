@@ -1,65 +1,36 @@
-# 🎯 ClaudeRadar
+# ClaudeRadar
 
-<div align="center">
+**A native macOS menu bar app for monitoring Claude AI token usage**
 
-![ClaudeRadar Icon](https://github.com/yourusername/ClaudeRadar/raw/main/Assets/icon-256.png)
-
-**A beautiful, native macOS app for monitoring Claude AI token usage**
-
-[![GitHub stars](https://img.shields.io/github/stars/yourusername/ClaudeRadar.svg)](https://github.com/yourusername/ClaudeRadar/stargazers)
-[![GitHub release](https://img.shields.io/github/release/yourusername/ClaudeRadar.svg)](https://github.com/yourusername/ClaudeRadar/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![macOS](https://img.shields.io/badge/macOS-13.0+-blue.svg)](https://www.apple.com/macos/)
+[![macOS](https://img.shields.io/badge/macOS-14.0+-blue.svg)](https://www.apple.com/macos/)
 [![Swift](https://img.shields.io/badge/Swift-5.9+-orange.svg)](https://swift.org/)
 
-[Download Latest Release](https://github.com/yourusername/ClaudeRadar/releases/latest) • [View Screenshots](#screenshots) • [Report Bug](https://github.com/yourusername/ClaudeRadar/issues)
+ClaudeRadar provides real-time monitoring of Claude AI token usage through a native macOS menu bar application. Built with SwiftUI, it offers live tracking of your Claude consumption across all models with session management and usage analytics.
 
-</div>
+## Features
 
-## ✨ Why ClaudeRadar?
+- **Native macOS Experience** - Built with SwiftUI for optimal performance
+- **Menu Bar Integration** - Accessible from your menu bar without taking up screen space
+- **Real-time Monitoring** - Live updates with 3-second refresh intervals
+- **Multi-Model Support** - Track usage across Opus, Sonnet, and Haiku models
+- **Session Management** - Understand Claude's 5-hour session windows
+- **Cross-Session Aggregation** - View total usage across multiple active sessions
+- **Privacy Focused** - All data processing happens locally on your Mac
 
-**Stop guessing your Claude token usage.** ClaudeRadar is the first truly native macOS app designed specifically for Claude AI power users who need real-time visibility into their token consumption.
+## Requirements
 
-### 🎊 What Makes It Special
+- macOS 14.0 (Sonoma) or later
+- Swift 5.9+ (for building from source)
+- Claude AI account with local data enabled
 
-- **🔥 Native macOS Experience** - Built with SwiftUI, not Electron
-- **⚡ Menu Bar Integration** - Always accessible, never intrusive  
-- **📊 Real-time Monitoring** - Live updates every 3 seconds
-- **🎨 Beautiful Design** - Follows Apple's Human Interface Guidelines
-- **🧠 Smart Notifications** - Contextual alerts when you need them
-- **📈 Usage Analytics** - Understand your Claude consumption patterns
-- **🔒 Privacy First** - All data stays on your Mac
+## Installation
 
-## 🎬 Screenshots
-
-<div align="center">
-
-### Menu Bar Interface
-![Menu Bar](screenshots/menubar.png)
-
-### Usage Analytics
-![Analytics](screenshots/analytics.png)
-
-### Settings Panel
-![Settings](screenshots/settings.png)
-
-</div>
-
-## ⚡ Quick Start
-
-### 📦 Install (Recommended)
-
-1. **Download the latest release** from [GitHub Releases](https://github.com/yourusername/ClaudeRadar/releases/latest)
-2. **Drag ClaudeRadar.app** to your Applications folder
-3. **Launch the app** - it will appear in your menu bar
-4. **Grant permissions** when prompted (to read Claude data)
-5. **You're done!** 🎉
-
-### 🛠️ Build from Source
+### Build from Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ClaudeRadar.git
+git clone https://github.com/shivadhiappan/ClaudeRadar.git
 cd ClaudeRadar
 
 # Build and run
@@ -67,131 +38,84 @@ swift build
 swift run ClaudeRadar
 ```
 
-**Requirements:**
-- macOS 13.0 (Ventura) or later
-- Xcode 15.0 or later (for building from source)
+### Development
 
-## 🎯 Features
+```bash
+# Quick development launch
+./launch.sh
 
-### 🔄 Real-time Monitoring
-- **Live token counting** with 3-second refresh intervals
-- **Session tracking** for Claude's 5-hour windows
-- **Burn rate calculation** to predict usage patterns
-- **Progress indicators** with beautiful color coding
+# Run tests
+swift test
 
-### 📊 Smart Analytics
-- **Usage history** with daily, weekly, and monthly views
-- **Cost tracking** to monitor your Claude spending
-- **Pattern detection** to understand your usage habits
-- **Export capabilities** for external analysis
+# Run with test data
+./test-and-launch.sh
+```
 
-### 🔔 Intelligent Notifications
-- **Usage warnings** when approaching limits (customizable thresholds)
-- **Session expiry alerts** with countdown timers
-- **Burn rate notifications** for high consumption periods
-- **Silent mode** for focused work sessions
+## How It Works
 
-### ⚙️ Customization
-- **Multiple token plans** (Pro, Max 5, Max 20, Auto-detect)
-- **Custom data paths** for non-standard Claude installations
-- **Refresh intervals** from 1-10 seconds
-- **Notification preferences** with granular control
+ClaudeRadar reads usage data from Claude's local JSONL files and provides:
 
-## 🎨 Design Philosophy
+- **Session Tracking**: Monitors Claude's 5-hour rolling session windows
+- **Model Breakdown**: Shows usage across Opus, Sonnet, and Haiku models
+- **Burn Rate Analysis**: Calculates token consumption rates
+- **Real-time Updates**: Refreshes every 3 seconds for live monitoring
+- **Cross-Session Aggregation**: Combines usage across multiple active sessions
 
-ClaudeRadar follows **Apple's Human Interface Guidelines** and embraces native macOS design patterns:
+### Supported Token Plans
+- **Pro**: 44,000 tokens per 5-hour session
+- **Max 5**: 220,000 tokens per 5-hour session  
+- **Max 20**: 880,000 tokens per 5-hour session
+- **Auto-detect**: Automatically determines your plan based on usage patterns
 
-- **Menu bar first** - Accessible but not intrusive
-- **System integration** - Respects Dark Mode, Focus modes, and accessibility
-- **Minimal resource usage** - Efficient Swift code, no Electron bloat  
-- **Privacy by design** - Zero telemetry, all data stays local
+## Architecture
 
-## 🔒 Privacy & Security
+ClaudeRadar follows modern SwiftUI patterns with clear separation of concerns:
 
-- **✅ No data collection** - ClaudeRadar never sends your data anywhere
-- **✅ Local processing** - All analysis happens on your Mac
-- **✅ Sandboxed** - Runs with minimal system permissions
-- **✅ Open source** - Full transparency of what the app does
+- **Menu Bar Integration**: Native macOS menu bar app using `NSStatusItem`
+- **Data Layer**: Dedicated services for data loading and session calculation
+- **UI Layer**: SwiftUI views with comprehensive theme and accessibility systems
+- **State Management**: Combine-based reactive state management
 
-## 📈 Comparison
+### Key Components
+- `UsageDataManager`: Central state coordinator
+- `ClaudeDataLoader`: JSONL file parsing with deduplication
+- `SessionCalculator`: Business logic for session windows and burn rates
+- `ThemeSystem`: Dark/light mode and accessibility support
 
-| Feature | ClaudeRadar | Terminal Tools | Browser Extensions |
-|---------|-------------|----------------|-------------------|
-| Native macOS UI | ✅ | ❌ | ❌ |
-| Menu bar integration | ✅ | ❌ | ❌ |
-| Real-time updates | ✅ | ✅ | ❌ |
-| No dependencies | ✅ | ❌ | ✅ |
-| Offline capable | ✅ | ✅ | ❌ |
-| Beautiful design | ✅ | ❌ | ❌ |
-| Privacy focused | ✅ | ✅ | ❌ |
+## Configuration
 
-## 🚀 Roadmap
+ClaudeRadar automatically detects Claude data in standard locations:
+- `~/.claude/projects`
+- `~/.config/claude/projects`
 
-### Phase 1: Foundation ✅
-- [x] Menu bar app with live monitoring
-- [x] Session tracking and burn rate calculation  
-- [x] Basic notifications and settings
-- [x] Data export functionality
+Customize settings through the app's preferences:
+- Token plan selection
+- Refresh interval (1-10 seconds)
+- Custom Claude data path
+- Notification preferences
 
-### Phase 2: Advanced Features 🚧
-- [ ] Historical usage charts and analytics
-- [ ] Keyboard shortcuts and Touch Bar support
-- [ ] Usage predictions with ML
-- [ ] Dashboard widgets for macOS
+## Contributing
 
-### Phase 3: Pro Features 📋
-- [ ] Team usage tracking
-- [ ] Advanced cost optimization
-- [ ] Plugin architecture
-- [ ] Integration with time tracking apps
-
-## 🤝 Contributing
-
-ClaudeRadar is open source and welcomes contributions! Here's how you can help:
-
-- **🐛 Report bugs** - Found something wrong? [Open an issue](https://github.com/yourusername/ClaudeRadar/issues)
-- **💡 Suggest features** - Have ideas? [Start a discussion](https://github.com/yourusername/ClaudeRadar/discussions)
-- **🔧 Submit PRs** - Ready to contribute code? Check our [Contributing Guide](CONTRIBUTING.md)
-- **⭐ Star the repo** - Show your support and help others discover ClaudeRadar
+Contributions are welcome! Please feel free to submit issues and pull requests.
 
 ### Development Setup
 
 ```bash
-# Clone with submodules
-git clone --recursive https://github.com/yourusername/ClaudeRadar.git
+# Clone the repository
+git clone https://github.com/shivadhiappan/ClaudeRadar.git
+cd ClaudeRadar
 
-# Open in Xcode
-open ClaudeRadar.xcodeproj
-
-# Or build with Swift Package Manager
+# Build and test
 swift build
+swift test
 ```
 
-## 💝 Support
+## License
 
-If ClaudeRadar saves you time and helps you be more productive with Claude:
+MIT License. See [LICENSE](LICENSE) for details.
 
-- **⭐ Star this repository** to show your support
-- **🐦 Share on Twitter** to help others discover it
-- **☕ Buy me a coffee** via [GitHub Sponsors](https://github.com/sponsors/yourusername)
+## Acknowledgments
 
-## 📝 License
-
-ClaudeRadar is released under the [MIT License](LICENSE). Feel free to use, modify, and distribute as you see fit.
-
-## 🙏 Acknowledgments
-
-- **Claude AI** for creating an amazing AI assistant
-- **Apple** for excellent developer tools and design guidelines
-- **The Swift community** for continuous innovation
-- **Beta testers** who helped shape ClaudeRadar
-
----
-
-<div align="center">
-
-**Made with ❤️ for the Claude community**
-
-[⭐ Star](https://github.com/yourusername/ClaudeRadar) • [🐦 Tweet](https://twitter.com/intent/tweet?text=Check%20out%20ClaudeRadar%20-%20a%20beautiful%20macOS%20app%20for%20monitoring%20Claude%20AI%20token%20usage!%20https://github.com/yourusername/ClaudeRadar) • [📧 Email](mailto:your-email@example.com)
-
-</div>
+- Claude AI for providing the excellent AI assistant
+- Apple for SwiftUI and macOS development tools
+- The Swift community for ongoing innovation
